@@ -12,7 +12,7 @@ class VideoCamera(object):
 		# Using OpenCV to capture from device 0. If you have trouble capturing
 		# from a webcam, comment the line below out and use a video file
 		# instead.
-		self.camera = cv2.VideoCapture(0)
+		self.camera = cv2.VideoCapture(1)
 		print("[INFO] loading model...")
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to

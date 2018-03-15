@@ -1,19 +1,23 @@
 # main.py
 
 from flask import Flask, render_template, Response
-from fancy_camera import VideoCamera
+from camera import VideoCamera
 import threading
 import time
 
 app = Flask(__name__)
-camera = VideoCamera()
-thread = threading.Thread(target=camera.start)
-thread.daemon = True
-thread.start()
+camera = None
 
 @app.route('/')
 def index():
-	return render_template('index.html') 
+        global camera
+        if camera == None:
+                camera = VideoCamera()
+                thread = threading.Thread(target=camera.start)
+                thread.daemon = True
+                thread.start()
+        time.sleep(2)
+        return render_template('index.html') 
 
 def gen(camera):
 	while True:
