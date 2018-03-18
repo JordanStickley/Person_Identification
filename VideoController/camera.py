@@ -4,7 +4,7 @@ import cv2
 import datetime
 import numpy as np
 import imutils
-import time
+import time, os
 from threading import Lock
 
 class VideoCamera(object):
@@ -12,7 +12,6 @@ class VideoCamera(object):
 		# Using OpenCV to capture from device 0. If you have trouble capturing
 		# from a webcam, comment the line below out and use a video file
 		# instead.
-		self.camera = cv2.VideoCapture(1)
 		print("[INFO] loading model...")
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to
@@ -22,15 +21,23 @@ class VideoCamera(object):
 	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
 	"sofa", "train", "tvmonitor"]
 		self.COLORS = np.random.uniform(0, 255, size=(len(self.CLASSES), 3))
-		self.jpeg = None
+
+		ret, self.no_video = cv2.imencode('.jpg', cv2.imread(os.path.realpath("./no_video.jpg")));
+		self.jpeg = self.no_video
+		self.capturing=False
 		self.lock = Lock()
 
 	def __del__(self):
 		self.camera.release()
 
 	def start(self):
-		while True:
+		self.camera = cv2.VideoCapture(-1)
+
+		while self.camera.isOpened():
+			self.capturing = True
 			(grabbed, frame) = self.camera.read()
+			if not grabbed:
+				continue
 			time.sleep(.1)
 			# grab the frame from the threaded video stream and resize it
 			# to have a maximum width of 400 pixels
@@ -73,7 +80,17 @@ class VideoCamera(object):
 			self.lock.acquire()
 			ret, self.jpeg = cv2.imencode('.jpg', frame)
 			self.lock.release()
+		self.capturing=False
+		self.lock.acquire()
+		self.jpeg = self.no_video
+		self.lock.release()
+		print('camera released.')
 
+	def stop(self):
+		self.camera.release()
+
+	def is_capturing(self):
+		return self.capturing
 
 	def get_frame(self):
 		self.lock.acquire()
