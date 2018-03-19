@@ -1,0 +1,17 @@
+<html>
+	<head>
+		<title>Person Identification System</title>
+		<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+	</head>
+	<body>
+		<h1>Main View</h1>
+		<h3>Cameras</h3>
+		<ul>
+		{% for id in camera_list %}
+			<li><a href="{{ url_for('view_camera', camera_id=id) }}">Camera {{ id }}</a></li>
+		{% endfor %}
+		</ul>
+		<h3>Activity Log</h3>
+		<div></div>
+	</body>
+</html>

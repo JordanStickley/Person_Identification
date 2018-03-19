@@ -13,6 +13,7 @@ class VideoCamera(object):
 		# from a webcam, comment the line below out and use a video file
 		# instead.
 		print("[INFO] loading model...")
+		self.camera = cv2.VideoCapture(0)
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to
 		# detect, then generate a set of bounding box colors for each class
@@ -31,8 +32,6 @@ class VideoCamera(object):
 		self.camera.release()
 
 	def start(self):
-		self.camera = cv2.VideoCapture(-1)
-
 		while self.camera.isOpened():
 			self.capturing = True
 			(grabbed, frame) = self.camera.read()
