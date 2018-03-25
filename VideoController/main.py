@@ -5,8 +5,10 @@ from camera import VideoCamera
 import time
 import os
 import threading
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 camera=None
 

@@ -2,16 +2,37 @@
 	<head>
 		<title>Person Identification System</title>
 		<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+		<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+		<script type=text/javascript src="{{url_for('static', filename='jquery.js') }}"></script>
+		<script type=text/javascript>
+		  $(function() {
+		  	{% for id in camera_list %}
+				$('a#camera{{id}}').bind('click', function() {
+		      $('#right').load('/view_camera/{{id}}');
+		      return false;
+		    });
+				{% endfor %}
+		  });
+		</script>
 	</head>
 	<body>
 		<h1>Main View</h1>
-		<h3>Cameras</h3>
-		<ul>
-		{% for id in camera_list %}
-			<li><a href="{{ url_for('view_camera', camera_id=id) }}">Camera {{ id }}</a></li>
-		{% endfor %}
-		</ul>
-		<h3>Activity Log</h3>
-		<div></div>
+		<div id="center">
+			<div id="left">
+				<h3>Cameras</h3>
+				<ul>
+				{% for id in camera_list %}
+					<li><a id="camera{{id}}" href="#">Camera {{ id }}</a></li>
+				{% endfor %}
+				</ul>
+			</div>
+			<div id="right">
+			</div>
+		</div>
+		<div style="clear: both"/>
+		<div id="bottom">
+			<h3>Activity Log</h3>
+			<div id="activity_log"></div>
+		</div>
 	</body>
 </html>
