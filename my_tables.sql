@@ -1,16 +1,18 @@
-CREATE TABLE tracking (
-	id					number primary key,
-	label				varchar(50),
-	start_time			timestamp,
-	end_time			timestamp,
-	camera_id			number foreign key
-	next_camera_id		number foreign key
+CREATE TABLE camera (
+	id		int primary key,
+	camera_IP		int,
+	left_cam_id 	int,
+	right_cam_id	int,
+	is_online		char(1)
 );
 
-
-CREATE TABLE camera (
-	camera_id		number primary key,
-	camera_IP		number,
-	left_cam_id 	number,
-	right_cam_id	number
+CREATE TABLE tracking (
+	id				int primary key,
+	label			varchar(50),
+	start_time		timestamp default current_timestamp,
+	end_time			timestamp default current_timestamp,
+	camera_id			int,
+	next_camera_id		int,
+	foreign key 		(camera_id) references camera(id),
+	foreign key 		(next_camera_id) references camera(id)
 );
