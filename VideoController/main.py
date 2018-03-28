@@ -1,6 +1,6 @@
 # main.py
 
-from flask import Flask, render_template, Response
+from flask import Flask, request, render_template, Response
 from camera import VideoCamera
 import time
 import os
@@ -12,8 +12,7 @@ CORS(app)
 
 camera=None
 
-@app.route('/')
-def index():
+def checkCamera():
 	global camera
 	if not camera:
 		camera = VideoCamera()
@@ -21,6 +20,23 @@ def index():
 		thread.daemon = True
 		thread.start()
 
+def shutdown_server():
+	func = request.environ.get('werkzeug.server.shutdown')
+	if func is None:
+		raise RuntimeError('Not running with the Werkzeug Server')
+	func()
+
+@app.route('/shutdown')
+def shutdown():
+	global camera
+	if camera:
+		camera.stop()
+	shutdown_server()
+	return 'Server shutting down...'
+
+@app.route('/')
+def index():
+	checkCamera()
 	return render_template('index.html') 
 
 def gen(camera):
@@ -35,6 +51,6 @@ def gen(camera):
 
 @app.route('/video_feed')
 def video_feed():
-	global camera
+	checkCamera()
 	return Response(gen(camera),
 										mimetype='multipart/x-mixed-replace; boundary=frame')

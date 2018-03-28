@@ -1,6 +1,6 @@
 #left {
 	float: left;
-	width: 130px;
+	width: 150px;
 }
 
 #center {
@@ -10,6 +10,6 @@
 
 #right {
 	height: 200px;
-	margin-left: 130px;
+	margin-left: 150px;
 	height: 300px;
 }
