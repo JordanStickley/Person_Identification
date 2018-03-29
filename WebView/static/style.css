@@ -13,3 +13,8 @@
 	margin-left: 150px;
 	height: 300px;
 }
+
+#left_camera_link,#right_camera_link {
+	width: 85px;
+	display: block;
+}

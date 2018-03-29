@@ -28,10 +28,10 @@ def index():
 @app.route('/view_camera/<int:camera_id>')
 def view_camera(camera_id):
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT camera_IP from camera where id = " + str(camera_id))
+	cursor.execute("SELECT * from camera where id = " + str(camera_id))
 	data = cursor.fetchone()
 	
-	return render_template('view.html', camera_id=camera_id, ip=data[0])
+	return render_template('view.html', camera_id=camera_id, data=data)
 
 @app.route('/home')
 def home():
