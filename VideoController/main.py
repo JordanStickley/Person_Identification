@@ -6,7 +6,10 @@ import time
 import os
 import threading
 from flask_cors import CORS
+import configparser
 
+config = configparser.ConfigParser()
+config.read('config')
 app = Flask(__name__)
 CORS(app)
 

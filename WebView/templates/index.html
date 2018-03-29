@@ -5,10 +5,14 @@
 		<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 		<script type=text/javascript src="{{url_for('static', filename='jquery.js') }}"></script>
 		<script type=text/javascript>
-		  $(function() {
-		  	{% for id in camera_list %}
-				$('a#camera{{id}}').bind('click', function() {
-		      $('#right').load('/view_camera/{{id}}');
+			$(function() {
+				$('a#camera0').bind('click', function() {
+					$('#right').load('/home');
+					return false;
+				});
+		  	{% for c in camera_list %}
+				$('a#camera{{c[0]}}').bind('click', function() {
+		      $('#right').load('/view_camera/{{c[0]}}');
 		      return false;
 		    });
 				{% endfor %}
@@ -21,8 +25,9 @@
 			<div id="left">
 				<h3>Cameras</h3>
 				<ul>
-				{% for id in camera_list %}
-					<li><a id="camera{{id}}" href="#">Camera {{ id }}</a></li>
+					<li><a id="camera0" href="#">Home</a></li>
+				{% for c in camera_list %}
+					<li><a id="camera{{c[0]}}" href="#">Camera {{c[0]}}</a></li>
 				{% endfor %}
 				</ul>
 			</div>
@@ -34,5 +39,6 @@
 			<h3>Activity Log</h3>
 			<div id="activity_log"></div>
 		</div>
+		<span>{{database_ip}}</span>
 	</body>
 </html>
