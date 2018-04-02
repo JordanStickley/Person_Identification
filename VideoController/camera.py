@@ -13,16 +13,12 @@ class VideoCamera(object):
 		# from a webcam, comment the line below out and use a video file
 		# instead.
 		print("[INFO] loading model...")
+		self.shutItDown = False
 		self.camera = cv2.VideoCapture(0)
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to
 		# detect, then generate a set of bounding box colors for each class
-		self.CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-	"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-	"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-	"sofa", "train", "tvmonitor"]
-		self.COLORS = np.random.uniform(0, 255, size=(len(self.CLASSES), 3))
-
+		
 		ret, self.no_video = cv2.imencode('.jpg', cv2.imread(os.path.realpath("./no_video.jpg")));
 		self.jpeg = self.no_video
 		self.capturing=False
@@ -32,7 +28,12 @@ class VideoCamera(object):
 		self.camera.release()
 
 	def start(self):
+		GREEN = (0,255,0)
 		while self.camera.isOpened():
+			if self.shutItDown:
+				self.camera.release()
+				break
+
 			self.capturing = True
 			(grabbed, frame) = self.camera.read()
 			if not grabbed:
@@ -64,18 +65,18 @@ class VideoCamera(object):
 					# `detections`, then compute the (x, y)-coordinates of
 					# the bounding box for the object
 
-					idx = int(detections[0, 0, i, 1])
+					idx = int(detections[0, 0, i, 1]) # idx 15 is person
 					box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
 					(startX, startY, endX, endY) = box.astype("int")
-					if confidence > 0.6 and (idx == 8 or idx == 12 or idx == 15):
+					if confidence > 0.6 and (idx == 15):
 						# draw the prediction on the frame
-						label = "{}: {:.2f}%".format(self.CLASSES[idx],
+						label = "{}: {:.2f}%".format("Person",
 							confidence * 100)
 						cv2.rectangle(frame, (startX, startY), (endX, endY),
-							self.COLORS[idx], 2)
+							GREEN, 2)
 						y = startY - 15 if startY - 15 > 15 else startY + 15
 						cv2.putText(frame, label, (startX, y),
-							cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.COLORS[idx], 2)
+							cv2.FONT_HERSHEY_SIMPLEX, 0.5, GREEN, 2)
 			self.lock.acquire()
 			ret, self.jpeg = cv2.imencode('.jpg', frame)
 			self.lock.release()
@@ -86,7 +87,7 @@ class VideoCamera(object):
 		print('camera released.')
 
 	def stop(self):
-		self.camera.release()
+		self.shutItDown = True
 
 	def is_capturing(self):
 		return self.capturing

@@ -1,6 +1,6 @@
 #left {
 	float: left;
-	width: 150px;
+	width: 200px;
 }
 
 #center {
@@ -10,11 +10,20 @@
 
 #right {
 	height: 200px;
-	margin-left: 150px;
+	margin-left: 200px;
 	height: 300px;
 }
 
 #left_camera_link,#right_camera_link {
 	width: 85px;
 	display: block;
+}
+
+li {
+	height: 35px;
+}
+
+.indicator {
+	width: 30px;
+	vertical-align:middle;
 }
