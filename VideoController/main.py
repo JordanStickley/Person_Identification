@@ -86,11 +86,12 @@ if not cameraDetails:
 	exit()
 
 def checkCamera():
+	global mysql
 	global camera
 	global cameraDetails
 	if not camera:
 		print('camera %s online' % cameraDetails.getID())
-		camera = VideoCamera()
+		camera = VideoCamera(cameraDetails, mysql)
 		thread = threading.Thread(target=camera.start)
 		thread.daemon = True
 		thread.start()

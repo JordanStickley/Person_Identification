@@ -55,7 +55,7 @@ class ActivityDbRow(object):
 		return "select id, label, start_time, end_time, camera_id, next_camera_id from tracking where id = %s" % self.id
 
 	def getUpdateStatement(self):
-		return "update tracking set label = '%s', end_time = current_timestamp(),camera_id = %s, next_camera_id = '%s' where id = %s" % (self.label, (self.camera_id if self.camera_id else 'null'), (self.next_camera_id if self.next_camera_id else 'null'), self.id)
+		return "update tracking set end_time = current_timestamp, next_camera_id = %s where id = %s" % ((self.next_camera_id if self.next_camera_id else 'null'), self.id)
 
 	def getInsertStatement(self):
-		return "insert into tracking (id, label, start_time, camera_id) values(%s, '%s', current_timestamp(), %s)" % (self.id, self.label, (self.camera_id if self.camera_id else 'null'))
+		return "insert into tracking (id, label, camera_id) values(%s, '%s', %s)" % (self.id, self.label, (self.camera_id if self.camera_id else 'null'))

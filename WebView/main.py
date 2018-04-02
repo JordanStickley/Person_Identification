@@ -34,7 +34,7 @@ def getCameraList():
 
 def getCameraListWithMotion():
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT distinct id from tracking where end_time = '0000-00-00 00:00:00' order by id desc")
+	cursor.execute("SELECT distinct camera_id from tracking where end_time = '0000-00-00 00:00:00' order by camera_id desc")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
 
