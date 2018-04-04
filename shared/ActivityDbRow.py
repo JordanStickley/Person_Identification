@@ -6,6 +6,8 @@ class ActivityDbRow(object):
 		self.end_time = None
 		self.camera_id = None
 		self.next_camera_id = None
+		self.rect_start = None
+		self.rect_end = None
 
 		if row:
 			self.id = row[0]
@@ -50,6 +52,18 @@ class ActivityDbRow(object):
 
 	def setNext_camera_id(self, next_camera_id):
 		self.next_camera_id = next_camera_id;
+
+	def getRect_start(self):
+		return self.rect_start
+
+	def setRect_start(self, point):
+		self.rect_start = point
+
+	def getRect_end(self):
+		return self.rect_end
+
+	def setRect_end(self, point):
+		self.rect_end = point
 
 	def getSelectStatement(self):
 		return "select id, label, start_time, end_time, camera_id, next_camera_id from tracking where id = %s" % self.id
