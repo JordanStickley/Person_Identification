@@ -40,14 +40,8 @@ def updateDetailsInDb():
 		cursor.execute(cameraDetails.getSelectStatement())
 		data = cursor.fetchone()
 		if data:
-			if data[4] != "T": #only allow the update to run if the db record  shows the state of the camera as offline
-				print(cameraDetails.getUpdateStatement())
-				cursor.execute(cameraDetails.getUpdateStatement())
-			else:
-				#If 2 cameras try to come online using the same ID, this else case will be followed
-				#and if the cameraDetails are set to None then later in the startup processes, a message
-				#is printed indicating that it might be a problem with not using a unique id.
-				cameraDetails = None
+			print(cameraDetails.getUpdateStatement())
+			cursor.execute(cameraDetails.getUpdateStatement())
 		else:
 			print(cameraDetails.getInsertStatement())
 			cursor.execute(cameraDetails.getInsertStatement())
