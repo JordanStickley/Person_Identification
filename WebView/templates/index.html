@@ -13,9 +13,15 @@
 				{% for c in camera_list %}
 				$.get('http://{{c.getIP()}}:5001/');
 				$('a#camera{{c.getID()}}_power').bind('click', function() {
-					$.get('http://{{c.getIP()}}:5001/shutdown', function() {
-						$('a#camera{{c.getID()}}_power').html('off');
-					});
+					if ($('a#camera{{c.getID()}}_power').html() == 'on') {
+						$.get('http://{{c.getIP()}}:5001/shutdown', function() {
+								$('a#camera{{c.getID()}}_power').html('off');
+						});
+					} else {
+						$.get('http://{{c.getIP()}}:5001/', function() {
+								$('a#camera{{c.getID()}}_power').html('on');
+						});
+					}
 					return false;
 				});
 				$('a#camera{{c.getID()}}').bind('click', function() {
@@ -45,7 +51,7 @@
 				<ul>
 					<li><a id="camera0" href="#">Home</a></li>
 				{% for c in camera_list %}
-					<li><a id="camera{{c.getID()}}" href="#">Camera {{c.getID()}}</a> - <a id="camera{{c.getID()}}_power" href="#">on</a> <img class="indicator" id="camera{{c.getID()}}_indicator" src="{{url_for('static', filename='green_indicator.png' if c.hasMotion() else 'red_indicator.png')}}"/></li>
+					<li><a id="camera{{c.getID()}}" href="#">Camera {{c.getID()}}</a> - <a id="camera{{c.getID()}}_power" href="#">{{"on" if c.isOnline() else "off"}}</a> <img class="indicator" id="camera{{c.getID()}}_indicator" src="{{url_for('static', filename='green_indicator.png' if c.hasMotion() else 'red_indicator.png')}}"/></li>
 				{% endfor %}
 				</ul>
 			</div>

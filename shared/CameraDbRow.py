@@ -13,7 +13,7 @@ class CameraDbRow(object):
 			self.ip = row[1]
 			self.left_camera_id = row[2]
 			self.right_camera_id = row[3]
-			self.is_online = row[4]
+			self.is_online = row[4] == 'T'
 
 	def getID(self):
 		return self.id
