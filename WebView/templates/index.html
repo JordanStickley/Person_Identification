@@ -1,3 +1,8 @@
+<!--
+	...previous history goes here
+	4/10 9:30pm JTS - fixed initial state of the on/off button by adding a js function afterr the ajax get is called
+	...new history goes here
+-->
 <html>
 	<head>
 		<title>Person Identification System</title>
@@ -11,7 +16,9 @@
 					return false;
 				});
 				{% for c in camera_list %}
-				$.get('http://{{c.getIP()}}:5001/');
+				$.get('http://{{c.getIP()}}:5001/', function() {
+					$('a#camera{{c.getID()}}_power').html('on')
+				});
 				$('a#camera{{c.getID()}}_power').bind('click', function() {
 					if ($('a#camera{{c.getID()}}_power').html() == 'on') {
 						$.get('http://{{c.getIP()}}:5001/shutdown', function() {
