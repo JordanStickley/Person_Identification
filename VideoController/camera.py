@@ -1,5 +1,5 @@
 # camera.py
-
+# 4/10 9:51pm LH - person tracking enhancement and some comment
 import sys
 sys.path.append("..")
 import cv2
@@ -34,7 +34,7 @@ class VideoCamera(object):
 	def __del__(self):
 		self.camera.release()
 
-	def getNextDbId(self):
+	def getNextActivityDbId(self):
 		cursor = self.mysql.connect().cursor()
 		cursor.execute("SELECT max(id) from tracking")
 		data = cursor.fetchall()
@@ -116,19 +116,23 @@ class VideoCamera(object):
 			if tracked_person_count < len(self.tracked_list):
 				removed_from_tracking=[]
 				for t in self.tracked_list:
-					if time.time() - t.getStart_time() > 2.1:
-						if (self.went_left(t)):
+					#gard againest false positives 'person should not have been in view for only 2 seconds'
+					if time.time() - t.getStart_time() > 2:
+						if self.went_left(t):
 							print("went left")
 							t.setNext_camera_id(self.cameraDetails.left_camera_id)
 							removed_from_tracking.append(t)
-							self.saveActivity(t)
-						elif (self.went_right(t)):
+						elif self.went_right(t):
 							print("went right")
 							t.setNext_camera_id(self.cameraDetails.right_camera_id)
 							removed_from_tracking.append(t)
-							self.saveActivity(t)
+						elif time.time() - t.getStart_time() > 10:
+							#this only happen if someone sneaks out of frame
+							removed_from_tracking.append(t)
 
 				for t in removed_from_tracking:
+					#remove tracked entries from tacked_list that were in removed_from_tracking list
+					self.saveActivity(t)
 					del self.tracked_list[self.tracked_list.index(t)]
 
 			self.lock.acquire()
@@ -144,7 +148,7 @@ class VideoCamera(object):
 		# if list is empty then just add a new activity
 		if not self.tracked_list:
 			t = ActivityDbRow()
-			t.setID(self.getNextDbId())
+			t.setID(self.getNextActivityDbId())
 			t.setCamera_id(self.cameraDetails.getID())
 			t.setLabel("Person %s" % t.getID())
 			t.setRect_start(p)
