@@ -65,6 +65,7 @@
 						hookUpCameraLinks();
 					});
 				}, 3000);
+				hookUpCameraLinks();
 			});
 		</script>
 	</head>
@@ -76,7 +77,9 @@
 				<ul>
 					<li><a id="camera0" href="#">Home</a></li>
 				{% for c in camera_list %}
-					<li><a id="camera{{c.getID()}}" href="#">Camera {{c.getID()}}</a> - <a id="camera{{c.getID()}}_power" href="#">{{"on" if c.isOnline() else "off"}}</a> <img class="indicator" id="camera{{c.getID()}}_indicator" src="{{url_for('static', filename='green_indicator.png' if c.hasMotion() else 'red_indicator.png')}}"/></li>
+					<li><a id="camera{{c.getID()}}" href="#">Camera {{c.getID()}}</a> - <a id="camera{{c.getID()}}_power" href="#">{{"on" if c.isOnline() else "off"}}</a> <img class="indicator" id="camera{{c.getID()}}_indicator" src="{{url_for('static', filename='green_indicator.png' if c.hasMotion() else 'red_indicator.png')}}"/>
+					<hidden id="camera_{{c.getID()}}_ip" value="{{c.getIP()}}"/>
+					</li>
 				{% endfor %}
 				</ul>
 			</div>
