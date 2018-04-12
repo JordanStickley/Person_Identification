@@ -1,4 +1,5 @@
 # main.py
+# 4/11 6:55pm SH & JD - Work realated with camera link ajax loding
 
 from flask import Flask, jsonify, render_template, Response, jsonify,json
 from flaskext.mysql import MySQL
@@ -52,6 +53,12 @@ def view_camera(camera_id):
 	data = cursor.fetchone()
 	
 	return render_template('view.html', camera_id=camera_id, data=data)
+
+@app.route('/cameras')
+def cameras():
+	camera_list = getCameraList()
+	return render_template('_cameras.html', camera_list=camera_list)
+
 
 @app.route('/home')
 def home():

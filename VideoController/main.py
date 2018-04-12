@@ -1,4 +1,5 @@
 # main.py
+# 4/11 6:55pm SH & JD - added extra call to updateDetailInDb()
 
 import sys
 sys.path.append("..")
@@ -92,6 +93,7 @@ def checkCamera():
 		thread = threading.Thread(target=camera.start)
 		thread.daemon = True
 		thread.start()
+	updateDetailsInDb()
 
 @app.route('/shutdown')
 def shutdown():
