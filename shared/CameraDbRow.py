@@ -1,3 +1,5 @@
+# 4/11 7:36pm JD - added functions for prediction indicator
+
 class CameraDbRow(object):
 	def __init__(self, row=None):
 		self.id = None
@@ -7,6 +9,7 @@ class CameraDbRow(object):
 		self.is_online = None
 
 		self.has_motion = False
+		self.has_predicted_motion = False
 
 		if row:
 			self.id = row[0]
@@ -59,3 +62,9 @@ class CameraDbRow(object):
 
 	def setHasMotion(self, b):
 		self.has_motion = b
+
+	def hasPredictedMotion(self):
+		return self.has_predicted_motion
+
+	def setHasPredictedMotion(self, b):
+		self.has_predicted_motion = b
