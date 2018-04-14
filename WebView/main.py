@@ -1,6 +1,7 @@
 # main.py
 # 4/11 6:55pm SH & JD - Work realated with camera link ajax loding
 # 4/11 7:36pm JD - work related to the prediction indicator
+# 4/13 8:51pm JL - fixed a small bug in the querry of getCameraListWithPredictedMotion()
 
 from flask import Flask, jsonify, render_template, Response, jsonify,json
 from flaskext.mysql import MySQL
@@ -45,7 +46,7 @@ def getCameraListWithMotion():
 
 def getCameraListWithPredictedMotion():
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT distinct camera_id from tracking where next_camera_id is not null and end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE) order by camera_id desc")
+	cursor.execute("SELECT distinct next_camera_id from tracking where next_camera_id is not null and end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE) order by next_camera_id desc")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
 

@@ -1,5 +1,6 @@
 # camera.py
 # 4/10 9:51pm LH - person tracking enhancement and some comment
+# 4/13 8:49pm JL - modified label assgignment logic to reuse original label for the same person at new camera.
 import sys
 sys.path.append("..")
 import cv2
@@ -20,7 +21,7 @@ class VideoCamera(object):
 		self.cameraDetails = cameraDetails
 		self.mysql = mysql
 		self.shutItDown = False
-		self.camera = cv2.VideoCapture(0)
+		self.camera = cv2.VideoCapture(1)
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to
 		# detect, then generate a set of bounding box colors for each class
@@ -142,7 +143,15 @@ class VideoCamera(object):
 		self.lock.acquire()
 		self.jpeg = self.no_video
 		self.lock.release()
-		print('camera released.')
+	print('camera released.')
+
+	def getLabel(self, id):
+		cursor = self.mysql.connect().cursor()
+		#created clause to exclude labels already in used by other tracked people
+		camera_id = self.cameraDetails.getID()
+		cursor.execute("SELECT label from tracking where next_camera_id is not null and next_camera_id = %s and label not in (select distinct label from tracking where camera_id = %s) order by start_time asc limit 1" % (camera_id, camera_id))
+		label = cursor.fetchone()
+		return label[0] if label is not None else "Person %s" % id
 
 	def find_closest_tracked_activity(self, p):
 		# if list is empty then just add a new activity
@@ -150,7 +159,7 @@ class VideoCamera(object):
 			t = ActivityDbRow()
 			t.setID(self.getNextActivityDbId())
 			t.setCamera_id(self.cameraDetails.getID())
-			t.setLabel("Person %s" % t.getID())
+			t.setLabel(self.getLabel(t.getID()))
 			t.setRect_start(p)
 			t.setStart_time(time.time())
 			self.insertActivity(t)
