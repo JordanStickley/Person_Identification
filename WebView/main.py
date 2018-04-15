@@ -2,14 +2,16 @@
 # 4/11 6:55pm SH & JD - Work realated with camera link ajax loding
 # 4/11 7:36pm JD - work related to the prediction indicator
 # 4/13 8:51pm JL - fixed a small bug in the querry of getCameraListWithPredictedMotion()
+# 4/15 5:05pm LH - added method to load activity from database and added route to sent it back to the browser
 
 from flask import Flask, jsonify, render_template, Response, jsonify,json
 from flaskext.mysql import MySQL
 import time, socket, sys
 import os
 import configparser
-sys.path.append("..")
+sys.path.append("..") #Add my parent folder so that I can get access to shared classes
 from shared.CameraDbRow import CameraDbRow
+from shared.ActivityDbRow import ActivityDbRow
 
 config = configparser.ConfigParser()
 config.read('config')
@@ -39,16 +41,30 @@ def getCameraList():
 	return camera_list
 
 def getCameraListWithMotion():
+	global mysql
 	cursor = mysql.connect().cursor()
 	cursor.execute("SELECT distinct camera_id from tracking where end_time = '0000-00-00 00:00:00' and start_time > DATE_SUB(current_timestamp, INTERVAL 5 MINUTE) order by camera_id desc")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
 
 def getCameraListWithPredictedMotion():
+	global mysql
 	cursor = mysql.connect().cursor()
 	cursor.execute("SELECT distinct next_camera_id from tracking where next_camera_id is not null and end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE) order by next_camera_id desc")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
+	
+def getActivityList():
+	global mysql
+	cursor = mysql.connect().cursor()
+	cursor.execute("SELECT * from tracking order by start_time desc limit 20")
+	activity_list = []
+	data = cursor.fetchall()
+	for d in data:
+		a = ActivityDbRow(d)
+		activity_list.append(a)
+	return activity_list
+
 
 @app.route('/')
 def index():
@@ -64,7 +80,13 @@ def view_camera(camera_id):
 	data = cursor.fetchone()
 	
 	return render_template('view.html', camera_id=camera_id, data=data)
-
+	
+#Flask route for pulling by Jquery to update the activity_list html
+@app.route('/activity')
+def activity():
+	activity_list = getActivityList()
+	return render_template('_activity.html', activity_list=activity_list)
+	
 @app.route('/cameras')
 def cameras():
 	camera_list = getCameraList()

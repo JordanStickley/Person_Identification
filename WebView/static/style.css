@@ -27,3 +27,12 @@ li {
 	width: 30px;
 	vertical-align:middle;
 }
+
+table {
+	border: 1px solid black;
+}
+
+td {
+	width: 175px;
+	text-align: center;
+}
