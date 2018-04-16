@@ -3,6 +3,7 @@
 # 4/11 7:36pm JD - work related to the prediction indicator
 # 4/13 8:51pm JL - fixed a small bug in the querry of getCameraListWithPredictedMotion()
 # 4/15 5:05pm LH - added method to load activity from database and added route to sent it back to the browser
+# 4/16 6:34pm JD - updated query to exclude activity where the expected person has arrived
 
 from flask import Flask, jsonify, render_template, Response, jsonify,json
 from flaskext.mysql import MySQL
@@ -50,7 +51,7 @@ def getCameraListWithMotion():
 def getCameraListWithPredictedMotion():
 	global mysql
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT distinct next_camera_id from tracking where next_camera_id is not null and end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE) order by next_camera_id desc")
+	cursor.execute("SELECT distinct a.next_camera_id from tracking a left join tracking b on a.next_camera_id = b.camera_id and a.label = b.label where a.next_camera_id is not null and b.camera_id is null and a.end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE)")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
 	
