@@ -1,6 +1,10 @@
+/* 
+	4/16 6:42pm JD - modified left width and left margin width
+*/
+
 #left {
 	float: left;
-	width: 200px;
+	width: 300px;
 }
 
 #center {
@@ -10,7 +14,7 @@
 
 #right {
 	height: 200px;
-	margin-left: 200px;
+	margin-left: 300px;
 	height: 300px;
 }
 

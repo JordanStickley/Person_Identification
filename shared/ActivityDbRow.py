@@ -6,8 +6,10 @@ class ActivityDbRow(object):
 		self.end_time = None
 		self.camera_id = None
 		self.next_camera_id = None
+		self.has_arrived = None
 		self.rect_start = None
 		self.rect_end = None
+		self.not_detected_count = 0
 
 		if row:
 			self.id = row[0]
@@ -16,6 +18,7 @@ class ActivityDbRow(object):
 			self.end_time = row[3]
 			self.camera_id = row[4]
 			self.next_camera_id = row[5]
+			self.has_arrived = True if row[6] and row[6] == 'T' else False
 
 	def getID(self):
 		return self.id
@@ -52,6 +55,12 @@ class ActivityDbRow(object):
 
 	def setNext_camera_id(self, next_camera_id):
 		self.next_camera_id = next_camera_id;
+
+	def has_arrived(self):
+		return self.has_arrived
+
+	def set_arrived(self, b):
+		self.has_arrived =b 
 
 	def getRect_start(self):
 		return self.rect_start
