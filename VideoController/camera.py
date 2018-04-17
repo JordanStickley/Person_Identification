@@ -1,6 +1,7 @@
 # camera.py
 # 4/10 9:51pm LH - person tracking enhancement and some comment
 # 4/13 8:49pm JL - modified label assgignment logic to reuse original label for the same person at new camera.
+# 4/16 8:07pm JD - better detection of when someone leaves view and more accurate label reuse
 import sys
 sys.path.append("..")
 import cv2
@@ -136,7 +137,7 @@ class VideoCamera(object):
 			removed_from_tracking=[]
 			for t in self.tracked_list:
 				if not t.was_detected():
-					#gard againest false positives 'person should not have been in view for only 2 seconds'
+					#guard againest false positives 'person should not have been in view for only 2 seconds'
 					if time.time() - t.getStart_time() > 2:
 						if self.went_left(t):
 							print("went left")
@@ -146,6 +147,11 @@ class VideoCamera(object):
 							print("went right")
 							t.setNext_camera_id(self.cameraDetails.right_camera_id)
 							removed_from_tracking.append(t)
+				elif t.has_left_the_scene():
+					#if someone leaves view and we don't detect it correctly, mark them arrived and remove from tracking
+					#the threshold for this is 5 times through the loop and we don't see them
+					t.set_arrived(True)
+					removed_from_tracking.append(t)
 						
 			for t in removed_from_tracking:
 				#remove tracked entries from tacked_list that were in removed_from_tracking list
@@ -163,12 +169,18 @@ class VideoCamera(object):
 		self.lock.release()
 	print('camera released.')
 
-	def getLabel(self, id):
-		cursor = self.mysql.connect().cursor()
+	def get_label(self, id):
+		conn = self.mysql.connect()
+		cursor = conn.cursor()
 		#created clause to exclude labels already in used by other tracked people
 		camera_id = self.cameraDetails.getID()
-		cursor.execute("SELECT label from tracking where next_camera_id is not null and next_camera_id = %s and label not in (select distinct label from tracking where camera_id = %s) order by start_time asc limit 1" % (camera_id, camera_id))
+		l = "Person %s" % id
+		cursor.execute("SELECT label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
 		label = cursor.fetchone()
+		if label:
+			l = label[0]
+			conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % id)
+			conn.commit()
 		return label[0] if label is not None else "Person %s" % id
 
 	def find_closest_tracked_activity(self, rect_start, detected_person_count):
@@ -194,7 +206,7 @@ class VideoCamera(object):
 		t = ActivityDbRow()
 		t.setID(self.getNextActivityDbId())
 		t.setCamera_id(self.cameraDetails.getID())
-		t.setLabel(self.getLabel(t.getID()))
+		t.setLabel(self.get_label(t.getID()))
 		t.setRect_start(rect_start)
 		t.setStart_time(time.time())
 		self.insertActivity(t)

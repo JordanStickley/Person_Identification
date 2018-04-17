@@ -44,14 +44,14 @@ def getCameraList():
 def getCameraListWithMotion():
 	global mysql
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT distinct camera_id from tracking where end_time = '0000-00-00 00:00:00' and start_time > DATE_SUB(current_timestamp, INTERVAL 5 MINUTE) order by camera_id desc")
+	cursor.execute("SELECT distinct camera_id from tracking where end_time is null and start_time > DATE_SUB(current_timestamp, INTERVAL 5 MINUTE) order by camera_id desc")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
 
 def getCameraListWithPredictedMotion():
 	global mysql
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT distinct a.next_camera_id from tracking a left join tracking b on a.next_camera_id = b.camera_id and a.label = b.label where a.next_camera_id is not null and b.camera_id is null and a.end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE)")
+	cursor.execute("SELECT distinct a.next_camera_id from tracking a left join tracking b on a.next_camera_id = b.camera_id and a.label = b.label where a.next_camera_id is not null and b.camera_id is null and a.has_arrived = 'F' and a.end_time > DATE_SUB(current_timestamp, INTERVAL 1 MINUTE)")
 	data = cursor.fetchall()
 	return [c for sublist in data for c in sublist]
 	

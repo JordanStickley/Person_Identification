@@ -1,3 +1,5 @@
+# 4/16 8:07pm JD - added has arrived attributes to keep track of when a tracked person arrives at the predicted camera
+
 class ActivityDbRow(object):
 	def __init__(self, row=None):
 		self.id = None
@@ -76,16 +78,22 @@ class ActivityDbRow(object):
 		self.rect_end = point
 
 	def set_detected(self, b):
+		if b:
+			self.not_detected_count = 0
 		self.detected = b
 
 	def was_detected(self):
 		return self.detected
 
+	def has_left_the_scene(self):
+		self.not_detected_count += 1
+		return self.not_detected_count > 5
+
 	def getSelectStatement(self):
 		return "select id, label, start_time, end_time, camera_id, next_camera_id from tracking where id = %s" % self.id
 
 	def getUpdateStatement(self):
-		return "update tracking set end_time = current_timestamp, next_camera_id = %s where id = %s" % ((self.next_camera_id if self.next_camera_id else 'null'), self.id)
+		return "update tracking set end_time = current_timestamp, next_camera_id = %s, has_arrived = '%s' where id = %s" % ((self.next_camera_id if self.next_camera_id else 'null'), 'T' if self.has_arrived else 'F', self.id)
 
 	def getInsertStatement(self):
-		return "insert into tracking (id, label, camera_id) values(%s, '%s', %s)" % (self.id, self.label, (self.camera_id if self.camera_id else 'null'))
+		return "insert into tracking (id, label, camera_id, has_arrived) values(%s, '%s', %s, 'F')" % (self.id, self.label, (self.camera_id if self.camera_id else 'null'))
