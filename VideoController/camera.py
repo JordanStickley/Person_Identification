@@ -12,6 +12,10 @@ from threading import Lock
 from shared.CameraDbRow import CameraDbRow
 from shared.ActivityDbRow import ActivityDbRow
 
+def distance(p1, p2):
+	# calculates the distance between two points
+	return ((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)**0.5
+
 class VideoCamera(object):
 	def __init__(self, cameraDetails, mysql):
 		# Using OpenCV to capture from device 0. If you have trouble capturing
@@ -56,6 +60,18 @@ class VideoCamera(object):
 	def getPredictedCameraId(self):
 		return 2
 
+	def count_detections(self, detections):
+		# filter out weak detections by ensuring the confidence is
+		# greater than the minimum confidence 
+		count = 0
+		for i in np.arange(0, detections.shape[2]):
+			confidence = detections[0, 0, i, 2]
+			if confidence > 0.2:
+				idx = int(detections[0, 0, i, 1])
+				if confidence > 0.5 and (idx == 15):
+					count += 1
+		return count 
+
 	def start(self):
 		GREEN = (0,255,0)
 		while self.camera.isOpened():
@@ -81,8 +97,12 @@ class VideoCamera(object):
 			# predictions
 			self.net.setInput(blob)
 			detections = self.net.forward()
-			tracked_person_count = 0
+			# count how many people we are tracking up front here
+			detected_person_count = self.count_detections(detections)
 			# loop over the detections
+			for t in self.tracked_list:
+				t.set_detected(false)
+
 			for i in np.arange(0, detections.shape[2]):
 				# extract the confidence (i.e., probability) associated with
 				# the prediction
@@ -95,17 +115,16 @@ class VideoCamera(object):
 					# `detections`, then compute the (x, y)-coordinates of
 					# the bounding box for the object
 
-					idx = int(detections[0, 0, i, 1]) # idx 15 is person
+					idx = int(detections[0, 0, i, 1])
 					box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
 					(startX, startY, endX, endY) = box.astype("int")
 					if confidence > 0.5 and (idx == 15):
-						tracked_person_count += 1
 						rect_start = (startX, startY)
 						rect_end = (endX, endY)
-						t = self.find_closest_tracked_activity(rect_start)
+						t = self.find_closest_tracked_activity(rect_start, detected_person_count)
+						t.set_detected(True)
 						t.setRect_start(rect_start)
 						t.setRect_end(rect_end)
-						print(str("x1=%d, x2=%d" % (t.getRect_start()[0], t.getRect_end()[0])))
 						# draw the prediction on the frame
 						label = "{}: {:.2f}%".format(t.getLabel(), confidence * 100)
 						cv2.rectangle(frame, rect_start, rect_end, GREEN, 2)
@@ -114,9 +133,9 @@ class VideoCamera(object):
 							cv2.FONT_HERSHEY_SIMPLEX, 0.5, GREEN, 2)
 
 			# this means that a person has left the camera
-			if tracked_person_count < len(self.tracked_list):
-				removed_from_tracking=[]
-				for t in self.tracked_list:
+			removed_from_tracking=[]
+			for t in self.tracked_list:
+				if not t.was_detected():
 					#gard againest false positives 'person should not have been in view for only 2 seconds'
 					if time.time() - t.getStart_time() > 2:
 						if self.went_left(t):
@@ -127,18 +146,17 @@ class VideoCamera(object):
 							print("went right")
 							t.setNext_camera_id(self.cameraDetails.right_camera_id)
 							removed_from_tracking.append(t)
-						elif time.time() - t.getStart_time() > 10:
-							#this only happen if someone sneaks out of frame
-							removed_from_tracking.append(t)
+						
+			for t in removed_from_tracking:
+				#remove tracked entries from tacked_list that were in removed_from_tracking list
+				self.saveActivity(t)
+				del self.tracked_list[self.tracked_list.index(t)]
 
-				for t in removed_from_tracking:
-					#remove tracked entries from tacked_list that were in removed_from_tracking list
-					self.saveActivity(t)
-					del self.tracked_list[self.tracked_list.index(t)]
-
+			#update the jpeg that we serve back to clients
 			self.lock.acquire()
 			ret, self.jpeg = cv2.imencode('.jpg', frame)
 			self.lock.release()
+
 		self.capturing=False
 		self.lock.acquire()
 		self.jpeg = self.no_video
@@ -153,27 +171,35 @@ class VideoCamera(object):
 		label = cursor.fetchone()
 		return label[0] if label is not None else "Person %s" % id
 
-	def find_closest_tracked_activity(self, p):
+	def find_closest_tracked_activity(self, rect_start, detected_person_count):
 		# if list is empty then just add a new activity
 		if not self.tracked_list:
-			t = ActivityDbRow()
-			t.setID(self.getNextActivityDbId())
-			t.setCamera_id(self.cameraDetails.getID())
-			t.setLabel(self.getLabel(t.getID()))
-			t.setRect_start(p)
-			t.setStart_time(time.time())
-			self.insertActivity(t)
-			self.tracked_list.append(t)
-			return t
+			return self.begin_new_tracking(rect_start)
 		else:
 			# otherwise use the distance formula to find the tracked activity that is closest to this new point
 			closest_t = None
 			for t in self.tracked_list:
 				if closest_t:
-					closest_t = t if distance(t.getRect_start(), p) < distance(closest_t.getRect_start(), p) else closest_t
+					closest_t = t if distance(t.getRect_start(), rect_start) < distance(closest_t.getRect_start(), rect_start) else closest_t
 				else:
 					closest_t = t
+
+			#don't use this one, it's to far from the last rectangle
+			#and we are tracking more than one person
+			if detected_person_count > len(self.tracked_list) and distance(closest_t.getRect_start(), rect_start) > 100:
+				closest_t = self.begin_new_tracking(rect_start)
 			return closest_t
+
+	def begin_new_tracking(self, rect_start):
+		t = ActivityDbRow()
+		t.setID(self.getNextActivityDbId())
+		t.setCamera_id(self.cameraDetails.getID())
+		t.setLabel(self.getLabel(t.getID()))
+		t.setRect_start(rect_start)
+		t.setStart_time(time.time())
+		self.insertActivity(t)
+		self.tracked_list.append(t)
+		return t
 
 	def went_left(self, activity):
 		return (activity.getRect_end()[0] > 345)

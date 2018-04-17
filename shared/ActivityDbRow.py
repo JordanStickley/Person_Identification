@@ -9,6 +9,7 @@ class ActivityDbRow(object):
 		self.has_arrived = None
 		self.rect_start = None
 		self.rect_end = None
+		self.detected = False
 		self.not_detected_count = 0
 
 		if row:
@@ -73,6 +74,12 @@ class ActivityDbRow(object):
 
 	def setRect_end(self, point):
 		self.rect_end = point
+
+	def set_detected(self, b):
+		self.detected = b
+
+	def was_detected(self):
+		return self.detected
 
 	def getSelectStatement(self):
 		return "select id, label, start_time, end_time, camera_id, next_camera_id from tracking where id = %s" % self.id
