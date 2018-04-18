@@ -26,7 +26,7 @@ class VideoCamera(object):
 		self.cameraDetails = cameraDetails
 		self.mysql = mysql
 		self.shutItDown = False
-		self.camera = cv2.VideoCapture(1)
+		self.camera = cv2.VideoCapture(0)
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to
 		# detect, then generate a set of bounding box colors for each class
@@ -102,7 +102,7 @@ class VideoCamera(object):
 			detected_person_count = self.count_detections(detections)
 			# loop over the detections
 			for t in self.tracked_list:
-				t.set_detected(false)
+				t.set_detected(False)
 
 			for i in np.arange(0, detections.shape[2]):
 				# extract the confidence (i.e., probability) associated with
