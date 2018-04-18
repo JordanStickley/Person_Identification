@@ -2,6 +2,7 @@
 # 4/10 9:51pm LH - person tracking enhancement and some comment
 # 4/13 8:49pm JL - modified label assgignment logic to reuse original label for the same person at new camera.
 # 4/16 8:07pm JD - better detection of when someone leaves view and more accurate label reuse
+# 4/17 9:00pm LH,JS - Fixed the get_label query to update the has_arrived correctly
 import sys
 sys.path.append("..")
 import cv2
@@ -175,11 +176,13 @@ class VideoCamera(object):
 		#created clause to exclude labels already in used by other tracked people
 		camera_id = self.cameraDetails.getID()
 		l = "Person %s" % id
-		cursor.execute("SELECT label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
-		label = cursor.fetchone()
-		if label:
-			l = label[0]
-			conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % id)
+		cursor.execute("SELECT id, label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
+		data = cursor.fetchone()
+		if data:
+			previous_id = data[0]
+			l = data[1]
+			print("%s, %s" % (previous_id, l))
+			conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % previous_id)
 			conn.commit()
 		return label[0] if label is not None else "Person %s" % id
 
