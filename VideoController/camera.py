@@ -184,7 +184,7 @@ class VideoCamera(object):
 			print("%s, %s" % (previous_id, l))
 			conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % previous_id)
 			conn.commit()
-		return label[0] if label is not None else "Person %s" % id
+		return l
 
 	def find_closest_tracked_activity(self, rect_start, detected_person_count):
 		# if list is empty then just add a new activity
