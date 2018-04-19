@@ -109,6 +109,6 @@ def clean_trackings():
         global mysql
         conn = mysql.connect()
         cursor = conn.cursor()
-        cursor.execute("update tracking set and_time = current_timespend where and_time is null")
+        cursor.execute("update tracking set end_time = current_timespend where end_time is null")
         conn.commit()
         return redirect("/")
