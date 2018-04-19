@@ -3,6 +3,7 @@
 # 4/13 8:49pm JL - modified label assgignment logic to reuse original label for the same person at new camera.
 # 4/16 8:07pm JD - better detection of when someone leaves view and more accurate label reuse
 # 4/17 9:00pm LH,JS - Fixed the get_label query to update the has_arrived correctly
+# 4/18 7:46pm SH,JL - add better matching logic when additional people come into view of a camera
 import sys
 sys.path.append("..")
 import cv2
@@ -37,7 +38,7 @@ class VideoCamera(object):
 		self.capturing=False
 		self.lock = Lock()
 		self.tracked_list = []
-
+		self.used_activity = []
 	def __del__(self):
 		self.camera.release()
 
@@ -62,21 +63,24 @@ class VideoCamera(object):
 	def getPredictedCameraId(self):
 		return 2
 
-	def count_detections(self, detections):
+	def get_all_detected_points(self, detections, h, w):
 		# filter out weak detections by ensuring the confidence is
 		# greater than the minimum confidence 
-		count = 0
+		points = []
 		for i in np.arange(0, detections.shape[2]):
 			confidence = detections[0, 0, i, 2]
 			if confidence > 0.2:
 				idx = int(detections[0, 0, i, 1])
 				if confidence > 0.5 and (idx == 15):
-					count += 1
-		return count 
+					box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+					points.append(box.astype("int")[0:2])
+
+		return points
 
 	def start(self):
 		GREEN = (0,255,0)
 		while self.camera.isOpened():
+			self.used_activity = []
 			if self.shutItDown:
 				self.camera.release()
 				break
@@ -100,7 +104,7 @@ class VideoCamera(object):
 			self.net.setInput(blob)
 			detections = self.net.forward()
 			# count how many people we are tracking up front here
-			detected_person_count = self.count_detections(detections)
+			all_detected_points = self.get_all_detected_points(detections, h, w)
 			# loop over the detections
 			for t in self.tracked_list:
 				t.set_detected(False)
@@ -123,7 +127,7 @@ class VideoCamera(object):
 					if confidence > 0.5 and (idx == 15):
 						rect_start = (startX, startY)
 						rect_end = (endX, endY)
-						t = self.find_closest_tracked_activity(rect_start, detected_person_count)
+						t = self.find_closest_tracked_activity(rect_start, all_detected_points)
 						t.set_detected(True)
 						t.setRect_start(rect_start)
 						t.setRect_end(rect_end)
@@ -153,7 +157,7 @@ class VideoCamera(object):
 					#the threshold for this is 5 times through the loop and we don't see them
 					t.set_arrived(True)
 					removed_from_tracking.append(t)
-						
+
 			for t in removed_from_tracking:
 				#remove tracked entries from tacked_list that were in removed_from_tracking list
 				self.saveActivity(t)
@@ -181,19 +185,21 @@ class VideoCamera(object):
 		if data:
 			previous_id = data[0]
 			l = data[1]
-			print("%s, %s" % (previous_id, l))
 			conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % previous_id)
 			conn.commit()
 		return l
 
-	def find_closest_tracked_activity(self, rect_start, detected_person_count):
+	def find_closest_tracked_activity(self, rect_start, all_detected_points):
+		detected_person_count = len(all_detected_points)
+		all_detected_points_except_this_one = list(filter(lambda x: x[0] != rect_start[0] or x[1] != rect_start[1], all_detected_points))
+		self.unused_tracked_list = list(set(self.tracked_list) - set(self.used_activity))
 		# if list is empty then just add a new activity
 		if not self.tracked_list:
 			return self.begin_new_tracking(rect_start)
 		else:
 			# otherwise use the distance formula to find the tracked activity that is closest to this new point
 			closest_t = None
-			for t in self.tracked_list:
+			for t in self.unused_tracked_list:
 				if closest_t:
 					closest_t = t if distance(t.getRect_start(), rect_start) < distance(closest_t.getRect_start(), rect_start) else closest_t
 				else:
@@ -201,9 +207,18 @@ class VideoCamera(object):
 
 			#don't use this one, it's to far from the last rectangle
 			#and we are tracking more than one person
-			if detected_person_count > len(self.tracked_list) and distance(closest_t.getRect_start(), rect_start) > 100:
+			more_people_than_activities = detected_person_count > len(self.tracked_list)
+			if not closest_t or (more_people_than_activities and self.is_this_activity_closer_to_someone_else(closest_t, all_detected_points_except_this_one, rect_start)):
 				closest_t = self.begin_new_tracking(rect_start)
+
+			self.used_activity.append(closest_t)
 			return closest_t
+
+	def is_this_activity_closer_to_someone_else(self, activity, the_others, me):
+		activity_rect = activity.getRect_start()
+		distance_to_me = distance(activity_rect, me)
+		matches = list(filter(lambda x: distance(activity_rect, x) < distance_to_me, the_others))
+		return len(matches) > 0
 
 	def begin_new_tracking(self, rect_start):
 		t = ActivityDbRow()
