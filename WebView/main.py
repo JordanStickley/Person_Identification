@@ -4,8 +4,9 @@
 # 4/13 8:51pm JL - fixed a small bug in the querry of getCameraListWithPredictedMotion()
 # 4/15 5:05pm LH - added method to load activity from database and added route to sent it back to the browser
 # 4/16 6:34pm JD - updated query to exclude activity where the expected person has arrived
+# 4/18 8:00pm JL - added a clean_trackings method for resetting the activity table
 
-from flask import Flask, jsonify, render_template, Response, jsonify,json
+from flask import Flask, jsonify, render_template, Response, jsonify,json, redirect
 from flaskext.mysql import MySQL
 import time, socket, sys
 import os
@@ -102,3 +103,12 @@ def home():
 def poll_for_status():
 	data = getCameraListWithMotion()
 	return jsonify(data);
+
+@app.route('/clean_trackings')
+def clean_trackings():
+        global mysql
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        cursor.execute("update tracking set and_time = current_timespend where and_time is null")
+        conn.commit()
+        return redirect("/")
