@@ -39,6 +39,8 @@ class VideoCamera(object):
 		self.lock = Lock()
 		self.tracked_list = []
 		self.used_activity = []
+		self.recently_left = None
+
 	def __del__(self):
 		self.camera.release()
 
@@ -161,6 +163,9 @@ class VideoCamera(object):
 			for t in removed_from_tracking:
 				#remove tracked entries from tacked_list that were in removed_from_tracking list
 				self.saveActivity(t)
+				t.setEnd_time(time.time())
+				self.recently_left = t
+
 				del self.tracked_list[self.tracked_list.index(t)]
 
 			#update the jpeg that we serve back to clients
@@ -221,14 +226,23 @@ class VideoCamera(object):
 		return len(matches) > 0
 
 	def begin_new_tracking(self, rect_start):
-		t = ActivityDbRow()
-		t.setID(self.getNextActivityDbId())
-		t.setCamera_id(self.cameraDetails.getID())
-		t.setLabel(self.get_label(t.getID()))
-		t.setRect_start(rect_start)
-		t.setStart_time(time.time())
-		self.insertActivity(t)
+		if self.recently_left != None and distance(rect_start, self.recently_left.getRect_start()) < 60 and time.time() - self.recently_left.getEnd_time() < 4: 
+			print("here!")
+			t = self.recently_left
+			t.setEnd_time(None)
+			t.setNext_camera_id(None)
+			self.saveActivity(t)
+		else:
+			t = ActivityDbRow()
+			t.setID(self.getNextActivityDbId())
+			t.setCamera_id(self.cameraDetails.getID())
+			t.setLabel(self.get_label(t.getID()))
+			t.setRect_start(rect_start)
+			t.setStart_time(time.time())
+			self.insertActivity(t)
+
 		self.tracked_list.append(t)
+		self.recently_left = None
 		return t
 
 	def went_left(self, activity):
@@ -236,10 +250,6 @@ class VideoCamera(object):
 
 	def went_right(self, activity):
 		return (activity.getRect_start()[0] < 65)
-
-	def distance(p1, p2):
-		# calculates the distance between 2 points
-		return ((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)**0.5
 
 	def stop(self):
 		self.shutItDown = True
