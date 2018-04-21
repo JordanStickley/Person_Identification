@@ -24,7 +24,7 @@ app.config['MYSQL_DATABASE_HOST'] = config['DB']['host']
 mysql.init_app(app)
 
 def updateDetailsInDb():
-	global mysql
+	global mysql, config
 	cameraDetails = None
 	try:
 		i=0
@@ -61,8 +61,7 @@ camera=None
 cameraDetails=None
 
 def shutdownCamera():
-	global mysql
-	global camera
+	global mysql, camera
 	try:
 		cameraDetails.setIsOnline(False)
 		conn = mysql.connect()
@@ -84,12 +83,12 @@ if not cameraDetails:
 	exit()
 
 def checkCamera():
-	global mysql
-	global camera
-	global cameraDetails
+	global config, mysql, camera, cameraDetails
+	
 	if not camera:
 		print('camera %s online' % cameraDetails.getID())
-		camera = VideoCamera(cameraDetails, mysql)
+		cv2_index = config['APP']['cv2_index'] if 'cv2_index' in config['APP'] else 0
+		camera = VideoCamera(cv2_index, cameraDetails, mysql)
 		thread = threading.Thread(target=camera.start)
 		thread.daemon = True
 		thread.start()
@@ -109,7 +108,7 @@ def gen(camera):
 	frame = None
 	while True:
 		if not frame:
-			time.sleep(.2)
+			time.sleep(.3)
 		frame = camera.get_frame()
 
 		yield (b'--frame\r\n'

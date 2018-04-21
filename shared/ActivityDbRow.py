@@ -59,10 +59,10 @@ class ActivityDbRow(object):
 	def setNext_camera_id(self, next_camera_id):
 		self.next_camera_id = next_camera_id;
 
-	def has_arrived(self):
+	def get_has_arrived(self):
 		return self.has_arrived
 
-	def set_arrived(self, b):
+	def set_has_arrived(self, b):
 		self.has_arrived =b 
 
 	def getRect_start(self):
@@ -90,7 +90,7 @@ class ActivityDbRow(object):
 		return self.not_detected_count > 5
 
 	def getSelectStatement(self):
-		return "select id, label, start_time, end_time, camera_id, next_camera_id from tracking where id = %s" % self.id
+		return "select id, label, start_time, end_time, camera_id, next_camera_id, has_arrived from tracking where id = %s" % self.id
 
 	def getUpdateStatement(self):
 		return "update tracking set end_time = current_timestamp, next_camera_id = %s, has_arrived = '%s' where id = %s" % ((self.next_camera_id if self.next_camera_id else 'null'), 'T' if self.has_arrived else 'F', self.id)

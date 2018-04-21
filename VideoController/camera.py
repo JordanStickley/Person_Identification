@@ -20,15 +20,13 @@ def distance(p1, p2):
 	return ((p2[0]-p1[0])**2+(p2[1]-p1[1])**2)**0.5
 
 class VideoCamera(object):
-	def __init__(self, cameraDetails, mysql):
-		# Using OpenCV to capture from device 0. If you have trouble capturing
-		# from a webcam, comment the line below out and use a video file
-		# instead.
-		print("[INFO] loading model...")
+	def __init__(self, cvs2_index, cameraDetails, mysql):
+		# Using OpenCV to capture from device 0.
 		self.cameraDetails = cameraDetails
 		self.mysql = mysql
 		self.shutItDown = False
-		self.camera = cv2.VideoCapture(0)
+		print(cvs2_index)
+		self.camera = cv2.VideoCapture(int(cvs2_index))
 		self.net = cv2.dnn.readNetFromCaffe("MobileNetSSD_deploy.prototxt.txt", "MobileNetSSD_deploy.caffemodel")
 		# initialize the list of class labels MobileNet SSD was trained to
 		# detect, then generate a set of bounding box colors for each class
@@ -49,6 +47,16 @@ class VideoCamera(object):
 		cursor.execute("SELECT max(id) from tracking")
 		data = cursor.fetchall()
 		return int(data[0][0])+1 if data[0][0] else 1
+
+	def loadActivityDb(self, id):
+		a = ActivityDbRow()
+		a.setID(id)
+		cursor = self.mysql.connect().cursor()
+		cursor.execute(a.getSelectStatement())
+		data = cursor.fetchone()
+		if data:
+			a = ActivityDbRow(data)
+		return a
 
 	def insertActivity(self, activity):
 		conn = self.mysql.connect()
@@ -157,7 +165,7 @@ class VideoCamera(object):
 				elif t.has_left_the_scene():
 					#if someone leaves view and we don't detect it correctly, mark them arrived and remove from tracking
 					#the threshold for this is 5 times through the loop and we don't see them
-					t.set_arrived(True)
+					t.set_has_arrived(True)
 					removed_from_tracking.append(t)
 
 			for t in removed_from_tracking:
@@ -226,13 +234,25 @@ class VideoCamera(object):
 		return len(matches) > 0
 
 	def begin_new_tracking(self, rect_start):
-		if self.recently_left != None and distance(rect_start, self.recently_left.getRect_start()) < 60 and time.time() - self.recently_left.getEnd_time() < 4: 
-			print("here!")
-			t = self.recently_left
-			t.setEnd_time(None)
-			t.setNext_camera_id(None)
-			self.saveActivity(t)
-		else:
+		t = None
+		#see if a recently leaving activity has returned
+		if (self.recently_left and
+				distance(rect_start, self.recently_left.getRect_start()) < 60 and # did they return close to where they left?
+				time.time() - self.recently_left.getEnd_time() < 6): # did they return in a reasonable amount of time?
+			
+			#check to see if they've arrived at their expected destination before trying to reuse here
+			a = self.loadActivityDb(self.recently_left.getID())
+			if not a.get_has_arrived():
+				t = self.recently_left
+				t.setEnd_time(None)
+				t.setNext_camera_id(None)
+				self.saveActivity(t)
+
+			#blank out the recently_left field to indicate that we no longer expect someone to return soon
+			self.recently_left = None
+
+		#if no previous activity found then create a new one
+		if not t:
 			t = ActivityDbRow()
 			t.setID(self.getNextActivityDbId())
 			t.setCamera_id(self.cameraDetails.getID())
@@ -241,8 +261,9 @@ class VideoCamera(object):
 			t.setStart_time(time.time())
 			self.insertActivity(t)
 
+		#keep track of the activity
 		self.tracked_list.append(t)
-		self.recently_left = None
+		
 		return t
 
 	def went_left(self, activity):
