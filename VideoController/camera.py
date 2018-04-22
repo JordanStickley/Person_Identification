@@ -190,7 +190,7 @@ class VideoCamera(object):
 	def get_next_person_id(self):
 		conn = self.mysql.connect()
 		cursor = conn.cursor()
-		cursor.execute("select count(distinct label) where label like 'Person%'")
+		cursor.execute("select count(distinct label) from tracking where label like 'Person%'")
 		data = cursor.fetchone()
 		if data:
 			return str(data[0])
