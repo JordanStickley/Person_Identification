@@ -96,4 +96,4 @@ class ActivityDbRow(object):
 		return "update tracking set end_time = current_timestamp, next_camera_id = %s, has_arrived = '%s' where id = %s" % ((self.next_camera_id if self.next_camera_id else 'null'), 'T' if self.has_arrived else 'F', self.id)
 
 	def getInsertStatement(self):
-		return "insert into tracking (label, camera_id, has_arrived) values('%s', %s, 'F')" % (self.label, (self.camera_id if self.camera_id else 'null'))
+		return "insert into tracking (label, camera_id, raw_time, has_arrived) values('%s', %s, '%s', 'F')" % (self.label, (self.camera_id if self.camera_id else 'null'), self.start_time)

@@ -64,7 +64,7 @@ class VideoCamera(object):
 		cursor.execute(activity.getInsertStatement())
 		conn.commit()
 		cursor = self.mysql.connect().cursor()
-		sql = "select id from tracking where start_time = '%s' and camera_id = %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(activity.getStart_time())), activity.getCamera_id())
+		sql = "select id from tracking where raw_time = '%s' and camera_id = %s" % (activity.getStart_time(), activity.getCamera_id())
 		print(sql)
 		cursor.execute(sql)
 		data = cursor.fetchone()
@@ -206,7 +206,7 @@ class VideoCamera(object):
 	def get_label(self, id):
 		conn = self.mysql.connect()
 		cursor = conn.cursor()
-		#created clause to exclude labels already in used by other tracked people
+		#created clause to exclude labels already in use by other tracked people
 		camera_id = self.cameraDetails.getID()
 		l = "Person %d" % (int(self.get_next_person_id()) + 1)
 		cursor.execute("SELECT id, label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
