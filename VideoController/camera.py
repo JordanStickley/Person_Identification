@@ -200,7 +200,7 @@ class VideoCamera(object):
 		cursor = conn.cursor()
 		#created clause to exclude labels already in used by other tracked people
 		camera_id = self.cameraDetails.getID()
-		l = "Person %s" % self.get_next_person_id() + 1
+		l = "Person %d" % (int(self.get_next_person_id()) + 1)
 		cursor.execute("SELECT id, label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
 		data = cursor.fetchone()
 		if data:
