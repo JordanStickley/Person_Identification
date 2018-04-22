@@ -63,6 +63,14 @@ class VideoCamera(object):
 		cursor = conn.cursor()
 		cursor.execute(activity.getInsertStatement())
 		conn.commit()
+		cursor = self.mysql.connect().cursor()
+		sql = "select id from tracking where start_time = '%s' and camera_id = %s" % (time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(activity.getStart_time())), activity.getCamera_id())
+		print(sql)
+		cursor.execute(sql)
+		data = cursor.fetchone()
+		print(data)
+		if data:
+			activity.setID(data[0])
 
 	def saveActivity(self, activity):
 		conn = self.mysql.connect()
@@ -262,12 +270,12 @@ class VideoCamera(object):
 		#if no previous activity found then create a new one
 		if not t:
 			t = ActivityDbRow()
-			t.setID(self.getNextActivityDbId())
 			t.setCamera_id(self.cameraDetails.getID())
 			t.setLabel(self.get_label(t.getID()))
 			t.setRect_start(rect_start)
 			t.setStart_time(time.time())
 			self.insertActivity(t)
+
 
 		#keep track of the activity
 		self.tracked_list.append(t)

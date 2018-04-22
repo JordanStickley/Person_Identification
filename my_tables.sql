@@ -13,7 +13,7 @@ CREATE TABLE camera (
 );
 
 CREATE TABLE tracking (
-	id					int primary key,
+	id					int primary key AUTO_INCREMENT,
 	label				varchar(50),
 	start_time			datetime default current_timestamp,
 	end_time			datetime,
