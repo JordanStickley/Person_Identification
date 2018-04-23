@@ -73,7 +73,7 @@ def index():
 	camera_list = getCameraList()
 
 	ip=socket.gethostbyname(socket.gethostname())
-	return render_template('index.html', camera_list=camera_list, database_ip=ip, home_content=render_template('_home.html')) 
+	return render_template('index.html', camera_list=camera_list, database_ip=ip) 
 
 @app.route('/view_camera/<int:camera_id>')
 def view_camera(camera_id):
