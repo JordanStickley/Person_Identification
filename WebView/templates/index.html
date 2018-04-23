@@ -3,7 +3,7 @@
 	4/10 9:30pm JTS - fixed initial state of the on/off button by adding a js function afterr the ajax get is called
 	4/11 6:55pm sh & jd - change camera links to be loaded by ajax.
 	4/15 5:14pm LH hookup activity feed.
-	4/18 8:05pm SH Add clean trackings.	
+	4/18 8:05pm SH Add reset.	
 -->
 <html>
 	<head>
@@ -52,8 +52,8 @@
 				});
 			}
 			$(function() {
-				$('a#clean_trackings').bind('click', function() {
-					$.get('/clean_trackings');
+				$('a#reset').bind('click', function() {
+					$.get('/reset');
 				});
 				$('a#camera0').bind('click', function() {
 					$('#right').load('/home');
@@ -94,7 +94,7 @@
 			</div>
 		</div>
 		<div style="clear: left"/>
-		<div><a href="/clean_trackings">Clean Tracking</a></div>
+		<div><a href="/reset">Reset</a></div>
 		<div id="bottom">
 			<h3>Activity Log</h3>
 			<div id="activity_log"></div>
