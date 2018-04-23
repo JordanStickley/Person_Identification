@@ -59,7 +59,7 @@ def getCameraListWithPredictedMotion():
 def getActivityList():
 	global mysql
 	cursor = mysql.connect().cursor()
-	cursor.execute("SELECT * from tracking order by start_time desc limit 20")
+	cursor.execute("SELECT id, label, start_time, end_time, camera_id, next_camera_id, has_arrived from tracking order by start_time desc limit 20")
 	activity_list = []
 	data = cursor.fetchall()
 	for d in data:
