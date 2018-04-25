@@ -73,10 +73,11 @@ class VideoCamera(object):
 			activity.setID(data[0])
 
 	def saveActivity(self, activity):
-		conn = self.mysql.connect()
-		cursor = conn.cursor()
-		cursor.execute(activity.getUpdateStatement())
-		conn.commit()
+		if activity.getID():
+			conn = self.mysql.connect()
+			cursor = conn.cursor()
+			cursor.execute(activity.getUpdateStatement())
+			conn.commit()
 
 	def getPredictedCameraId(self):
 		return 2
@@ -214,8 +215,9 @@ class VideoCamera(object):
 		if data:
 			previous_id = data[0]
 			l = data[1]
-			conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % previous_id)
-			conn.commit()
+			if previous_id:
+				conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % previous_id)
+				conn.commit()
 		return l
 
 	def find_closest_tracked_activity(self, rect_start, all_detected_points):
@@ -283,10 +285,10 @@ class VideoCamera(object):
 		return t
 
 	def went_left(self, activity):
-		return (activity.getRect_end()[0] > 345)
+		return (activity.getRect_end()[0] > 200)
 
 	def went_right(self, activity):
-		return (activity.getRect_start()[0] < 65)
+		return (activity.getRect_start()[0] < 200)
 
 	def stop(self):
 		self.shutItDown = True
