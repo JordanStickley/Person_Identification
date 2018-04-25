@@ -198,17 +198,17 @@ class VideoCamera(object):
 	def get_next_person_id(self):
 		conn = self.mysql.connect()
 		cursor = conn.cursor()
-		cursor.execute("select count(distinct label) from tracking where label like 'Person%'")
+		cursor.execute("select count(distinct label) from tracking")
 		data = cursor.fetchone()
 		if data:
-			return str(data[0])
+			return int(data[0])
 
-	def get_label(self, id):
+	def get_label(self):
 		conn = self.mysql.connect()
 		cursor = conn.cursor()
 		#created clause to exclude labels already in use by other tracked people
 		camera_id = self.cameraDetails.getID()
-		l = "Person %d" % (int(self.get_next_person_id()) + 1)
+		l = "Person %d" % (self.get_next_person_id() + 1)
 		cursor.execute("SELECT id, label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
 		data = cursor.fetchone()
 		if data:
@@ -271,7 +271,7 @@ class VideoCamera(object):
 		if not t:
 			t = ActivityDbRow()
 			t.setCamera_id(self.cameraDetails.getID())
-			t.setLabel(self.get_label(t.getID()))
+			t.setLabel(self.get_label())
 			t.setRect_start(rect_start)
 			t.setStart_time(time.time())
 			self.insertActivity(t)
