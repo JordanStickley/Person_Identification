@@ -1,4 +1,4 @@
-Camera mapping is always done by facing a camera and deciding which camera is physically to it's left and right.  Numeric order doesn't matter.
+Camera mapping is always done by facing a camera and deciding which camera is physically to it's left and right.  Numeric order doesn't matter.  The config file for each instance of the VideoController must be populated with this information during the setup of the system.  A config.sample file with all such configuration exists in git.
 
 linear with cameras facing each other
 1                   |
