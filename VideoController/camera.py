@@ -66,10 +66,8 @@ class VideoCamera(object):
 		cursor = self.mysql.connect().cursor()
 		# raw_time field is an alternate key that allows us to find the newly inserted row and get it's id
 		sql = "select id from tracking where raw_time = '%s' and camera_id = %s" % (activity.getStart_time(), activity.getCamera_id())
-		print(sql)
 		cursor.execute(sql)
 		data = cursor.fetchone()
-		print(data)
 		if data:
 			activity.setID(data[0])
 
@@ -176,11 +174,11 @@ class VideoCamera(object):
 					if time.time() - t.getStart_time() > 2:
 						#which way did they go?
 						if self.went_left(t):
-							print("went left")
+							print("went left heading to %s" % self.cameraDetails.left_camera_id)
 							t.setNext_camera_id(self.cameraDetails.left_camera_id)
 							removed_from_tracking.append(t)
 						elif self.went_right(t):
-							print("went right")
+							print("went right heading to %s" % self.cameraDetails.right_camera_id)
 							t.setNext_camera_id(self.cameraDetails.right_camera_id)
 							removed_from_tracking.append(t)
 				elif t.has_left_the_scene():

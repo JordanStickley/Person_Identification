@@ -41,10 +41,8 @@ def updateDetailsInDb():
 		cursor.execute(cameraDetails.getSelectStatement())
 		data = cursor.fetchone()
 		if data:
-			print(cameraDetails.getUpdateStatement())
 			cursor.execute(cameraDetails.getUpdateStatement())
 		else:
-			print(cameraDetails.getInsertStatement())
 			cursor.execute(cameraDetails.getInsertStatement())
 		conn.commit()
 	except:
@@ -83,7 +81,6 @@ def checkCamera():
 	global config, mysql, camera, cameraDetails
 	# this allows the method to be called more than once without starting an additional camera thread
 	if not camera:
-		print('camera %s online' % cameraDetails.getID())
 		cv2_index = config['APP']['cv2_index'] if 'cv2_index' in config['APP'] else 0
 		camera = VideoCamera(cv2_index, cameraDetails, mysql)
 		#the main camera loop in the start method is invoked here by the thread

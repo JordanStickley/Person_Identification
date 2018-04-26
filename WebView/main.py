@@ -24,6 +24,11 @@ app.config['MYSQL_DATABASE_PASSWORD'] = config['DB']['password']
 app.config['MYSQL_DATABASE_DB'] = config['DB']['schema']
 app.config['MYSQL_DATABASE_HOST'] = config['DB']['host']
 mysql.init_app(app)
+conn = mysql.connect()
+cursor = conn.cursor()
+cursor.execute("delete from tracking")
+cursor.execute("delete from camera")
+conn.commit()
 
 def getCameraList():
 	global mysql
