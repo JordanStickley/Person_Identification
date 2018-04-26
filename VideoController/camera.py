@@ -79,6 +79,13 @@ class VideoCamera(object):
 			cursor.execute(activity.getUpdateStatement())
 			conn.commit()
 
+	def saveRecoveredActivity(self, activity):
+		if activity.getID():
+			conn = self.mysql.connect()
+			cursor = conn.cursor()
+			cursor.execute("update tracking set end_time = null, next_camera_id = null, has_arrived = 'F' where id = %s" % activity.getID())
+			conn.commit()
+
 	#We use this to interact with the neural net data returned form cv2 to build up the list of starting rectangle coordinates for all detected people
 	#this method is called up front to know ahead of the detection logic how many people we are dealing with
 	def get_all_detected_points(self, detections, h, w):
@@ -283,7 +290,7 @@ class VideoCamera(object):
 				t = self.recently_left
 				t.setEnd_time(None)
 				t.setNext_camera_id(None)
-				self.saveActivity(t)
+				self.saveRecoveredActivity(t)
 
 			#blank out the recently_left field to indicate that we no longer expect someone to return soon
 			self.recently_left = None
