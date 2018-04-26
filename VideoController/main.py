@@ -51,15 +51,10 @@ def updateDetailsInDb():
 		print("Unexpected error:", sys.exc_info())
 	return cameraDetails
 
-def shutdown_server():
-	func = request.environ.get('werkzeug.server.shutdown')
-	if func is None:
-		raise RuntimeError('Not running with the Werkzeug Server')
-	func()
-
 camera=None
 cameraDetails=None
 
+#called by the shutdown flask route to stop the video camera hardware
 def shutdownCamera():
 	global mysql, camera
 	try:
@@ -74,6 +69,7 @@ def shutdownCamera():
 	except:
 		print(sys.exc_info())
 
+#a hook to try and shutdown the camer if the video controller exits ( doesn't seem to work on windows )
 atexit.register(shutdownCamera)
 
 cameraDetails = updateDetailsInDb()
@@ -82,16 +78,19 @@ if not cameraDetails:
 	print("Not able to start video controller. Make sure this controller has a unique camera ID in config.")
 	exit()
 
+#a method called by flask to start the thread that manages the camera
 def checkCamera():
 	global config, mysql, camera, cameraDetails
-	
+	# this allows the method to be called more than once without starting an additional camera thread
 	if not camera:
 		print('camera %s online' % cameraDetails.getID())
 		cv2_index = config['APP']['cv2_index'] if 'cv2_index' in config['APP'] else 0
 		camera = VideoCamera(cv2_index, cameraDetails, mysql)
+		#the main camera loop in the start method is invoked here by the thread
 		thread = threading.Thread(target=camera.start)
 		thread.daemon = True
 		thread.start()
+	#this method also updates the database with current state of this camera instance
 	updateDetailsInDb()
 
 @app.route('/shutdown')

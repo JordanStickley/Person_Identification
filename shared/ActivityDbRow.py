@@ -2,6 +2,7 @@
 
 class ActivityDbRow(object):
 	def __init__(self, row=None):
+		# these values correspond with the columns in the database
 		self.id = None
 		self.label = None
 		self.start_time = None
@@ -9,12 +10,14 @@ class ActivityDbRow(object):
 		self.camera_id = None
 		self.next_camera_id = None
 		self.has_arrived = None
-		self.rect_start = None
-		self.rect_end = None
-		self.detected = False
-		self.not_detected_count = 0
 
-		if row:
+		# these values are used at runtime to track various aspects of the tracked person
+		self.rect_start = None # the x,y upper left coordinate of the bounding rect
+		self.rect_end = None # the x, y of the lower right ...
+		self.detected = False # this value gets marked as true on each pass through the main camera loop until the person leaves and then becomes false
+		self.not_detected_count = 0 #an additional value used to decide when a person has left the camera
+
+		if row: # when reconsituting from the database we will have a row of column values that we use to populate this instance
 			self.id = row[0]
 			self.label = row[1]
 			self.start_time = row[2]
@@ -23,6 +26,7 @@ class ActivityDbRow(object):
 			self.next_camera_id = row[5]
 			self.has_arrived = True if row[6] and row[6] == 'T' else False
 
+#below are general setter and getter methods for the above attributes
 	def getID(self):
 		return self.id
 
@@ -85,15 +89,22 @@ class ActivityDbRow(object):
 	def was_detected(self):
 		return self.detected
 
+	#only if this gets called 5 times does it finally return true
+	#it insures that we have indeed encountered an activity that
+	#has left the camera but we don't know which way they went
+	#five times = a half a second of time
 	def has_left_the_scene(self):
 		self.not_detected_count += 1
 		return self.not_detected_count > 5
 
+	#some basic sql methods for common operations on an activitydbrow
 	def getSelectStatement(self):
 		return "select id, label, start_time, end_time, camera_id, next_camera_id, has_arrived from tracking where id = %s" % self.id
 
+	#when updating a tracking record we are only updating the end_time, next_camera_id and has_arrived columns
 	def getUpdateStatement(self):
 		return "update tracking set end_time = current_timestamp, next_camera_id = %s, has_arrived = '%s' where id = %s" % ((self.next_camera_id if self.next_camera_id else 'null'), 'T' if self.has_arrived else 'F', self.id)
 
+	#when inserting we are populating the lable, camera_id, raw_time and has_arrived columns ( the database uses an auto increment id field that assigns the id )
 	def getInsertStatement(self):
 		return "insert into tracking (label, camera_id, raw_time, has_arrived) values('%s', %s, '%s', 'F')" % (self.label, (self.camera_id if self.camera_id else 'null'), self.start_time)
