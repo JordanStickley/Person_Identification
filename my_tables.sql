@@ -6,7 +6,7 @@ USE securedb;
 
 CREATE TABLE camera (
 	id 						int primary key,
-	camera_IP 		varchar(15),
+	camera_IP 		varchar(20),
 	left_cam_id 	int,
 	right_cam_id 	int,
 	is_online 		char(1)
