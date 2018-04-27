@@ -23,6 +23,14 @@ app.config['MYSQL_DATABASE_DB'] = config['DB']['schema']
 app.config['MYSQL_DATABASE_HOST'] = config['DB']['host']
 mysql.init_app(app)
 
+#hacky way to get my own ip address - connect to mysql and then disconnect
+def get_ip_address():
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.connect((config['DB']['host'], 3306))
+	ip = s.getsockname()[0]
+	s.close()
+	return ip
+
 def updateDetailsInDb():
 	global mysql, config
 	cameraDetails = None
@@ -30,7 +38,7 @@ def updateDetailsInDb():
 		i=0
 		cameraDetails = CameraDbRow()
 		cameraDetails.setID(config['APP']['camera_id'])
-		cameraDetails.setIP(socket.gethostbyname(socket.gethostname()))
+		cameraDetails.setIP(get_ip_address())
 		if 'left_camera_id' in config['APP']:
 			cameraDetails.setLeftCameraID(config['APP']['left_camera_id'])
 		if 'right_camera_id' in config['APP']:
