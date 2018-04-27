@@ -46,11 +46,11 @@
 					//connecting up the on/off handlers to the specific anchors for each camera
 					$('a#camera'+cameraId+'_power').bind('click', function() {
 						if ($('a#camera'+cameraId+'_power').html() == 'on') {
-							$.get('http://'+cameraIP+':5001/shutdown', function() {
+							$.get('http://'+cameraIP+'/shutdown', function() {
 									$('a#camera'+cameraId+'_power').html('off');
 							});
 						} else {
-							$.get('http://'+cameraIP+':5001/', function() {
+							$.get('http://'+cameraIP+'/', function() {
 									$('a#camera'+cameraId+'_power').html('on');
 							});
 						}
@@ -74,7 +74,7 @@
 				});
 				//below is a python for loop using flask syntax for generating an ajax call for each camera to cause that camera to turn on
 				{% for c in camera_list %}
-				$.get('http://{{c.getIP()}}:5001/', function() {
+				$.get('http://{{c.getIP()}}/', function() {
 					//after the ajax call, find the corresponding camera anchor and change it's html to 'on'
 					$('a#camera{{c.getID()}}_power').html('on')
 				});
@@ -107,7 +107,7 @@
 				<ul>
 					<li><a id="camera0" href="#">Home</a></li>
 				{% for c in camera_list %}
-					<li><a id="camera{{c.getID()}}" href="#">Camera {{c.getID()}}</a> - <a id="camera{{c.getID()}}_power" href="#">{{"on" if c.isOnline() else "off"}}</a> <img class="indicator" id="camera{{c.getID()}}_indicator" src="{{url_for('static', filename='green_indicator.png' if c.hasMotion() else 'red_indicator.png')}}"/>
+					<li><a id="camera{{c.getID()}}" href="#">Camera {{c.getID()}}</a> - <a id="camera{{c.getID()}}_power" href="#">off</a> <img class="indicator" id="camera{{c.getID()}}_indicator" src="{{url_for('static', filename='green_indicator.png' if c.hasMotion() else 'red_indicator.png')}}"/>
 					<hidden id="camera_{{c.getID()}}_ip" value="{{c.getIP()}}"/>
 					</li>
 				{% endfor %}

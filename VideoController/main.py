@@ -31,6 +31,12 @@ def get_ip_address():
 	s.close()
 	return ip
 
+def get_port():
+	port = "5001"
+	if 'listen_port' in config['APP']:
+		port = config['APP']['listen_port']
+	return port
+
 def updateDetailsInDb():
 	global mysql, config
 	cameraDetails = None
@@ -38,7 +44,7 @@ def updateDetailsInDb():
 		i=0
 		cameraDetails = CameraDbRow()
 		cameraDetails.setID(config['APP']['camera_id'])
-		cameraDetails.setIP(get_ip_address())
+		cameraDetails.setIP("%s:%s" % (get_ip_address(), get_port()))
 		if 'left_camera_id' in config['APP']:
 			cameraDetails.setLeftCameraID(config['APP']['left_camera_id'])
 		if 'right_camera_id' in config['APP']:

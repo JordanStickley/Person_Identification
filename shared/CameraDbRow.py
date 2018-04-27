@@ -55,7 +55,7 @@ class CameraDbRow(object):
 		return "update camera set camera_IP = '%s', left_cam_id = %s, right_cam_id = %s, is_online = '%s' where id = %s" % (self.ip, (self.left_camera_id if self.left_camera_id else 'null'), (self.right_camera_id if self.right_camera_id else 'null'), ('T' if self.is_online  else 'F'), self.id)
 
 	def getInsertStatement(self):
-		return "insert into camera (id, camera_IP, left_cam_id, right_cam_id, is_online) values(%s, '%s', %s, %s, '%s')" % (self.id, self.ip, (self.left_camera_id if self.left_camera_id else 'null'), (self.right_camera_id if self.right_camera_id else 'null'), ('T' if self.is_online  else 'F'))
+		return "insert into camera (id, camera_IP, left_cam_id, right_cam_id) values(%s, '%s', %s, %s)" % (self.id, self.ip, (self.left_camera_id if self.left_camera_id else 'null'), (self.right_camera_id if self.right_camera_id else 'null'))
 
 	def hasMotion(self):
 		return self.has_motion
