@@ -13,6 +13,7 @@ Install an os specific version of mysql
 	Using the root mysql user, run the my_tables.sql script found in the root of the git project
 	This will create a securedb schema + the two tables + a secuser that has permission to connect
 	and use the tables.
+	mysql -u root -p < my_tables.sql
 
 Installation option 1 - single computer
 	All components can be installed and running on a single computer but the system would be limited to a single camera
