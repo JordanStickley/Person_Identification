@@ -12,9 +12,12 @@
 		<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
 		<script type=text/javascript src="{{url_for('static', filename='jquery.js') }}"></script>
 		<script type=text/javascript>
+			//hook up javascript click logic to the camera links that are beside the video feed
 			function hookUpSideCameraLinks() {
 				$(".side_camera_link").each(function() {
+					//grab the cameraId off the end of the anchor id 
 					var cameraId = $(this).attr('id').substring(6);
+					//connect up the function that will display the video feed for the camera that is clicked on
 					$(this).bind('click', function() {
 						$('#right').load('/view_camera/'+cameraId, function() {
 							hookUpSideCameraLinks();
@@ -23,11 +26,14 @@
 					});
 				});
 			}
+			//hook up the main camera links to their javascript handlers
 			function hookUpCameraLinks() {
+				//this happens when the home link is clicked
 				$('a#camera0').bind('click', function() {
 					$('#right').load('/home');
 					return false;
 				});
+				//each camera_link is found using it's css class and then we connect up the view camera handler and the on/off handlers
 				$(".camera_link").each(function() {
 					var cameraId = $(this).attr('id').substring(6);
 					var cameraIP = $('#camera_'+cameraId+'_ip').attr('value');
@@ -37,6 +43,7 @@
 						});
 						return false;
 					});
+					//connecting up the on/off handlers to the specific anchors for each camera
 					$('a#camera'+cameraId+'_power').bind('click', function() {
 						if ($('a#camera'+cameraId+'_power').html() == 'on') {
 							$.get('http://'+cameraIP+':5001/shutdown', function() {
@@ -51,27 +58,43 @@
 					});
 				});
 			}
+			//this function is executed by jquery after the entire document is loaded by the browser
 			$(function() {
+				//attach a click handler to the reset anchor
 				$('a#reset').bind('click', function() {
 					$.get('/reset');
+					return false;
 				});
+				//connect a handler to the camera0 anchor which is our "home" link
+				//it just uses ajax to replace the current camera being viewed with the
+				//logo and title
 				$('a#camera0').bind('click', function() {
 					$('#right').load('/home');
 					return false;
 				});
+				//below is a python for loop using flask syntax for generating an ajax call for each camera to cause that camera to turn on
 				{% for c in camera_list %}
 				$.get('http://{{c.getIP()}}:5001/', function() {
+					//after the ajax call, find the corresponding camera anchor and change it's html to 'on'
 					$('a#camera{{c.getID()}}_power').html('on')
 				});
 				{% endfor %}
+				//setup a reoccurring function to run every 2 seconds that polls the camera status and activity from the database to update the UI
 				setInterval(function() {
+					//ask for the camera html and load it into the "left" panel
+					//after the content is loaded, call the hookUpCameraLinks function
 					$('#left').load('/cameras', function() {
 						hookUpCameraLinks();
 					});
+					//load new activity html into the 'bottom' panel via ajax
 					$('#bottom').load('/activity');
 				}, 2000);
+				//initially show the "home" content on page load by loading it with this ajax call
 				$('#right').load('/home');
+				//upon page load we have an initial list of camera links and we'd like to 
+				//hook up the behavior so this call happens after the page loads
 				hookUpCameraLinks();
+				//also want to preload the activity panel at startup so it's loaded here with an extra ajax call
 				$('#bottom').load('/activity');
 			});
 		</script>
@@ -91,11 +114,10 @@
 				</ul>
 			</div>
 			<div id="right">
-				{{ home_content }}
 			</div>
 		</div>
 		<div style="clear: left"/>
-		<div><a href="/reset">Reset</a></div>
+		<div><a id="reset" href="#">Reset</a></div>
 		<div id="bottom">
 			<h3>Activity Log</h3>
 			<div id="activity_log"></div>

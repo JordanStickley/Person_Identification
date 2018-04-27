@@ -116,7 +116,6 @@ class VideoCamera(object):
 			(grabbed, frame) = self.camera.read() #read a frame of video from cv2 camera instance
 			if not grabbed: # if no frame is returned this will be false and we'll loop back to the top of the while loop
 				continue
-			time.sleep(.1) # performance enhancement to only grab a frame once per 100 milliseconds ( 10 frames per second )
 			# grab the frame from the threaded video stream and resize it
 			# to have a maximum width of 400 pixels
 			frame = imutils.resize(frame, width=400)
@@ -172,6 +171,8 @@ class VideoCamera(object):
 						cv2.putText(frame, label, (startX, y),
 							cv2.FONT_HERSHEY_SIMPLEX, 0.5, GREEN, 2)
 
+			time.sleep(.1) # performance enhancement to only grab a frame once per 100 milliseconds ( 10 frames per second )
+			
 			# this logic tries to determine who left the camera
 			removed_from_tracking=[]
 			# loop over everthing we are currently tracking
