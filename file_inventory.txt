@@ -34,8 +34,8 @@ VideoController
 	start scripts - a batch file and bash script for launching flask on windows or unix
 
 shared
-	ActivityDbRow.py
-	CameraDbRow.py
+	ActivityDbRow.py - represents a row from the tracking table
+	CameraDbRow.py - represents a row from the camera table
 Database
 	securedb
 		camera

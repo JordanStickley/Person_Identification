@@ -39,7 +39,7 @@ class VideoCamera(object):
 		self.lock = Lock() # a lock used when allowing access to the video feed by the browser
 		self.tracked_list = [] # the list of currently tracked activities ( simultaneous people refrences )
 		self.used_activity = [] # of the activities being tracked, on each frame this list keeps track of the activities that are still active, all other activities represent people who have left
-		self.recently_left = None # this keeps track of the most person that most recently left and is used to detect if they happen to return again to the same camera
+		self.recently_left = None # this keeps track of the person that most recently left and is used to detect if they happen to return again to the same camera
 
 	def __del__(self):
 		self.camera.release()
@@ -233,7 +233,7 @@ class VideoCamera(object):
 		camera_id = self.cameraDetails.getID()
 		l = "Person %d" % self.get_next_person_number()
 		#try to find the original label for this tracked person rather than creating a new label
-		#the label for an activity record (for this camera) that indicates that someone is supposed to arrive but hasn't needs to be used as the label if one is found
+		#the label for an activity record (for this camera) that indicates that someone is supposed to arrive but hasn't, needs to be used as the label if one is found
 		#because we predicted someone would arrive and now someone has, we are assuming it's the same person so reuse the label
 		cursor.execute("SELECT id, label from tracking where next_camera_id is not null and next_camera_id = %s and has_arrived = 'F' order by start_time asc limit 1" % (camera_id))
 		data = cursor.fetchone()
@@ -241,15 +241,19 @@ class VideoCamera(object):
 			previous_id = data[0]
 			# use this label instead of the one we were going to use
 			l = data[1]
-			#update the prediction logic so that the yellow indicator turns off at the same time the the motion indicator turns on at this camera
+			#update the prediction logic so that the yellow indicator turns off at the same time the motion indicator turns on at this camera
 			if previous_id:
 				conn.cursor().execute("update tracking set has_arrived = 'T' where id = %d" % previous_id)
 				conn.commit()
 		return l
 
+	#method to find a tracking activity record that corresponds with the person detected in this frame represented by rect_start
 	def find_closest_tracked_activity(self, rect_start, all_detected_points):
+		#populate a variable with the number of detected people in frame at this time
 		detected_person_count = len(all_detected_points)
+		#remove rect_start from all_detected_points - any points in the list that are not rect_start are kept by this lambda expression
 		all_detected_points_except_this_one = list(filter(lambda x: x[0] != rect_start[0] or x[1] != rect_start[1], all_detected_points))
+		#find all the traced activities not yet paired up with a person in this frame
 		self.unused_tracked_list = list(set(self.tracked_list) - set(self.used_activity))
 		# if list is empty then just add a new activity
 		if not self.tracked_list:
@@ -263,21 +267,28 @@ class VideoCamera(object):
 				else:
 					closest_t = t
 
-			#don't use this one, it's to far from the last rectangle
+			#we might not want to use this one if it's closer to someone else
 			#and we are tracking more than one person
 			more_people_than_activities = detected_person_count > len(self.tracked_list)
+			#if the activity found above is actually closer to one of the other people in frame, then don't pair it to this person, instead create a new one
 			if not closest_t or (more_people_than_activities and self.is_this_activity_closer_to_someone_else(closest_t, all_detected_points_except_this_one, rect_start)):
 				closest_t = self.begin_new_tracking(rect_start)
 
+			#mark it as used here so that the next pass through the detection loop above, we don't try to use it again
 			self.used_activity.append(closest_t)
 			return closest_t
 
+	#search through the list "the_others" and find any matches that are closer to "activity" than "me"
 	def is_this_activity_closer_to_someone_else(self, activity, the_others, me):
+		#closeness is determined by using the upper left rectangle coordinates and the distance formula
 		activity_rect = activity.getRect_start()
+		#find the distance between me and the activity that I am being matched with
 		distance_to_me = distance(activity_rect, me)
+		# use that distance to filter out other matches that are closer
 		matches = list(filter(lambda x: distance(activity_rect, x) < distance_to_me, the_others))
-		return len(matches) > 0
+		return len(matches) > 0 # if any were found, return true otherwise false
 
+	#begin a new ActivityDbRow instance to track a new person in frame
 	def begin_new_tracking(self, rect_start):
 		t = None
 		#see if a recently leaving activity has returned
@@ -286,8 +297,10 @@ class VideoCamera(object):
 				time.time() - self.recently_left.getEnd_time() < 6): # did they return in a reasonable amount of time?
 			
 			#check to see if they've arrived at their expected destination before trying to reuse here
+			#if they arrived at the predicted camera then they are probably not returning to this one
 			a = self.loadActivityDb(self.recently_left.getID())
 			if not a.get_has_arrived():
+				#since that is not the case, lets reuse the previous tracking record and unset the end time and predicted next camera
 				t = self.recently_left
 				t.setEnd_time(None)
 				t.setNext_camera_id(None)
@@ -311,18 +324,27 @@ class VideoCamera(object):
 		
 		return t
 
+	#this simple calculation decides if a recently leaving person went left based on the fact that their 
+	# bottom right x coordinate is greater than the mid point of the frame
 	def went_left(self, activity):
 		return (activity.getRect_end()[0] > 200)
 
+	#this simple calculation decides if a recently leaving person went right based on the fact that their 
+	# top left x coordinate is less than the mid point of the frame
 	def went_right(self, activity):
 		return (activity.getRect_start()[0] < 200)
 
+	#method called from flask main to toggle a flag causing the start "while" loop to exit and shut down the camera
 	def stop(self):
 		self.shutItDown = True
 
+	# getter method fir the capturing boolean field
 	def is_capturing(self):
 		return self.capturing
 
+	# when the browser "polls" the flask app for a frame of video, it is retrieved by calling this method
+	# We use a "lock" here because jpeg might be in the middle of an update by the camera thread even
+	# at the same time that the browser is trying to access it.
 	def get_frame(self):
 		self.lock.acquire()
 		bytes = self.jpeg.tobytes()

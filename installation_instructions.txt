@@ -1,5 +1,3 @@
-Clone the sourcecode from git: https://github.com/JordanStickley/Person_Identification.git
-
 Install an OS specific version of python 3.6
 	Plus the following packages
 	- opencv-python
@@ -11,8 +9,7 @@ Install an OS specific version of python 3.6
 
 Install an os specific version of mysql
 	Using the root mysql user, run the my_tables.sql script found in the root of the git project
-	This will create a securedb schema + the two tables + a secuser that has permission to connect
-	and use the tables.
+	This will create a securedb schema + the two tables + a secuser that has permission to connect and use the tables.
 	mysql -u root -p < my_tables.sql
 
 Installation option 1 - single computer
