@@ -12,9 +12,13 @@ import configparser
 from shared.CameraDbRow import CameraDbRow
 import atexit
 
+config_file='config'
+if 'config_file_name' in os.environ:
+	config_file=os.environ['config_file_name']
+
 #read in parameters form the config file
 config = configparser.ConfigParser()
-config.read('config')
+config.read(config_file)
 # set up flask and mysql
 app = Flask(__name__)
 CORS(app)
