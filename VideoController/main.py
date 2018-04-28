@@ -37,8 +37,8 @@ def get_ip_address():
 #this method will allow for a flexible port assignment
 def get_port():
 	port = "5001"
-	if 'listen_port' in config['APP']:
-		port = config['APP']['listen_port']
+	if 'PORT' in os.environ:
+		port = os.environ['PORT']
 	return port
 
 #Called to store specific details about this camer in the database
