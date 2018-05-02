@@ -31,5 +31,9 @@ Installation option 2 - multiple computers
 		Will be running the following process
 			VideoController - modify config script as described in the file_inventory.txt
 
+To start the WebView, cd into it's directory and use either start.sh or start.cmd
+to start the VideoController, cd into it's directory and use either start.sh or start.cmd
+open browser and point it to http://localhost:5000
+
 Note about mysql access from remote computers.  By default, mysql installs without remote access enabled ( only binds to localhost ).  The documentation describes how to change my.cnf (my.ini on windows) to allow remote access.
 
