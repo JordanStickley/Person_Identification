@@ -14,6 +14,13 @@ import time, os
 from threading import Lock
 from shared.CameraDbRow import CameraDbRow
 from shared.ActivityDbRow import ActivityDbRow
+import face_recognition
+
+def whichHalf(x):
+	if x < 128:
+		return 0
+	else:
+		return 1
 
 # used as part of the prediction algorithm and also to help facility keeping the same person labeled correctly
 def distance(p1, p2):
@@ -102,9 +109,51 @@ class VideoCamera(object):
 
 		return points
 
+	def identify(self, sub_frame, cv2):
+		BLUE=(255, 0, 0)
+		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
+		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
+		SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
+		label = None
+		rect = None
+		# Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+		rgb_frame = sub_frame[:, :, ::-1]
+
+		# Find all the faces and face enqcodings in the frame of video
+		face_locations = face_recognition.face_locations(rgb_frame)
+		face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+		# Loop through each face in this frame of video
+		for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+			x = left
+			y = top
+			w = right-left
+			h = bottom-top
+			x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
+			y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
+			w = int(SHIRT_SCALE_X * w);
+			h = int(SHIRT_SCALE_Y * h);
+			cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
+			label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
+
+		return label
+
+	def saveActivityLabel(self, t):
+		conn = self.mysql.connect()
+		cursor = conn.cursor()
+		cursor.execute("update tracking set label = '%s' where id = %s" % (t.getLabel(), t.getID()))
+		conn.commit()
+
+	def getIdentitiyCode(self, img):
+		ids=[[[1, 2],[3, 4]],[[5, 6],[7, 8]]]
+		avg_color_per_row = np.average(img, axis=0)
+		avg_color = np.average(avg_color_per_row, axis=0)
+		(b, g, r) = avg_color
+		return ids[whichHalf(r)][whichHalf(g)][whichHalf(b)]
+
 	#start contains the main camera loop and is called by our background thread - see main.py for how it gets called
 	def start(self):
 		GREEN = (0,255,0) # a color value for drawing our green boxes
+		BLUE=(0, 0, 255)
 		#each loop is a frame of video - do we see people in this frame?
 		while self.camera.isOpened(): # loop until the camer is closed
 			self.used_activity = [] # initialize to an empty list on each frame
@@ -160,13 +209,18 @@ class VideoCamera(object):
 						#we use this function call to associate the bounding box we are working on 
 						#right now with the closest activity from the previous frame
 						#if no previous activities are being tracked then a new activity is created
-						t = self.find_closest_tracked_activity(rect_start, all_detected_points)
+						newLabel = self.identify(frame[startY:endY,startX:endX], cv2)
+						t = self.find_closest_tracked_activity(rect_start, newLabel, all_detected_points)
+						if newLabel != None:
+							t.setLabel(newLabel)
+							self.saveActivityLabel(t)
 						t.set_detected(True) # mark it as being detected so we know it's an active tracking
 						t.setRect_start(rect_start)
 						t.setRect_end(rect_end)
 						# draw the prediction on the frame
 						label = "{}: {:.2f}%".format(t.getLabel(), confidence * 100)
 						cv2.rectangle(frame, rect_start, rect_end, GREEN, 2)
+
 						y = startY - 15 if startY - 15 > 15 else startY + 15
 						cv2.putText(frame, label, (startX, y),
 							cv2.FONT_HERSHEY_SIMPLEX, 0.5, GREEN, 2)
@@ -231,7 +285,7 @@ class VideoCamera(object):
 		conn = self.mysql.connect()
 		cursor = conn.cursor()
 		camera_id = self.cameraDetails.getID()
-		l = "Person %d" % self.get_next_person_number()
+		l = "Unknown"
 		#try to find the original label for this tracked person rather than creating a new label
 		#the label for an activity record (for this camera) that indicates that someone is supposed to arrive but hasn't, needs to be used as the label if one is found
 		#because we predicted someone would arrive and now someone has, we are assuming it's the same person so reuse the label
@@ -248,7 +302,7 @@ class VideoCamera(object):
 		return l
 
 	#method to find a tracking activity record that corresponds with the person detected in this frame represented by rect_start
-	def find_closest_tracked_activity(self, rect_start, all_detected_points):
+	def find_closest_tracked_activity(self, rect_start, newLabel, all_detected_points):
 		#populate a variable with the number of detected people in frame at this time
 		detected_person_count = len(all_detected_points)
 		#remove rect_start from all_detected_points - any points in the list that are not rect_start are kept by this lambda expression
@@ -263,7 +317,12 @@ class VideoCamera(object):
 			closest_t = None
 			for t in self.unused_tracked_list:
 				if closest_t:
+					#first find the next closest match
 					closest_t = t if distance(t.getRect_start(), rect_start) < distance(closest_t.getRect_start(), rect_start) else closest_t
+					#use if the labels match.  This keeps a "swap" from happening when multiple people are close together
+					if newLabel != None and closest_t.getLabel() == newLabel:
+						self.used_activity.append(closest_t)
+						return closest_t # just return this one because it must be the match
 				else:
 					closest_t = t
 
