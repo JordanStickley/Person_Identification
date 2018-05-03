@@ -169,8 +169,8 @@ class VideoCamera(object):
 		avg_color_per_row = np.average(img, axis=0)
 		avg_color = np.average(avg_color_per_row, axis=0)
 		(b, g, r) = avg_color
-		print(str(avg_color))
-		print("%s %s %s" % (whichHalf(r),whichHalf(g),whichHalf(b)))
+		#print(str(avg_color))
+		#print("%s %s %s" % (whichHalf(r),whichHalf(g),whichHalf(b)))
 		return ids[whichHalf(r)][whichHalf(g)][whichHalf(b)]
 
 	#start contains the main camera loop and is called by our background thread - see main.py for how it gets called
@@ -354,6 +354,8 @@ class VideoCamera(object):
 			more_people_than_activities = detected_person_count > len(self.tracked_list)
 			#if the activity found above is actually closer to one of the other people in frame, then don't pair it to this person, instead create a new one
 			if not closest_t or (more_people_than_activities and self.is_this_activity_closer_to_someone_else(closest_t, all_detected_points_except_this_one, rect_start)):
+				print(more_people_than_activities)
+				print(closest_t)
 				closest_t = self.begin_new_tracking(rect_start)
 
 			#mark it as used here so that the next pass through the detection loop above, we don't try to use it again
@@ -374,22 +376,23 @@ class VideoCamera(object):
 	def begin_new_tracking(self, rect_start):
 		t = None
 		#see if a recently leaving activity has returned
-		if (self.recently_left and
-				distance(rect_start, self.recently_left.getRect_start()) < 60 and # did they return close to where they left?
-				time.time() - self.recently_left.getEnd_time() < 6): # did they return in a reasonable amount of time?
+		if self.recently_left:
+			d = distance(rect_start, self.recently_left.getRect_start())
+			# did they return close to where they left?
+			if d < 100 and time.time() - self.recently_left.getEnd_time() < 6: # did they return in a reasonable amount of time?
 			
-			#check to see if they've arrived at their expected destination before trying to reuse here
-			#if they arrived at the predicted camera then they are probably not returning to this one
-			a = self.loadActivityDb(self.recently_left.getID())
-			if not a.get_has_arrived():
-				#since that is not the case, lets reuse the previous tracking record and unset the end time and predicted next camera
-				t = self.recently_left
-				t.setEnd_time(None)
-				t.setNext_camera_id(None)
-				self.saveRecoveredActivity(t)
+				#check to see if they've arrived at their expected destination before trying to reuse here
+				#if they arrived at the predicted camera then they are probably not returning to this one
+				a = self.loadActivityDb(self.recently_left.getID())
+				if not a.get_has_arrived():
+					#since that is not the case, lets reuse the previous tracking record and unset the end time and predicted next camera
+					t = self.recently_left
+					t.setEnd_time(None)
+					t.setNext_camera_id(None)
+					self.saveRecoveredActivity(t)
 
-			#blank out the recently_left field to indicate that we no longer expect someone to return soon
-			self.recently_left = None
+				#blank out the recently_left field to indicate that we no longer expect someone to return soon
+				self.recently_left = None
 
 		#if no previous activity found then create a new one
 		if not t:
