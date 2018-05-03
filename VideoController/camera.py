@@ -14,7 +14,7 @@ import time, os
 from threading import Lock
 from shared.CameraDbRow import CameraDbRow
 from shared.ActivityDbRow import ActivityDbRow
-import face_recognition
+# import face_recognition
 
 def whichHalf(x):
 	if x < 128:
@@ -109,13 +109,34 @@ class VideoCamera(object):
 
 		return points
 
+	def identify2(self, sub_frame, cv2):
+		BLUE=(255, 0, 0)
+		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
+		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
+		SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
+		label = None
+		try:
+			gray = cv2.cvtColor(sub_frame, cv2.COLOR_BGR2GRAY)
+			gray = cv2.GaussianBlur(gray, (21, 21), 0)
+			face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt2.xml')
+			faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+			for (x,y,w,h) in faces:
+				x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
+				y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
+				w = int(SHIRT_SCALE_X * w);
+				h = int(SHIRT_SCALE_Y * h);
+				cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
+				label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
+		except Exception:
+			None
+		return label
+
 	def identify(self, sub_frame, cv2):
 		BLUE=(255, 0, 0)
 		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
 		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
 		SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
 		label = None
-		rect = None
 		# Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
 		rgb_frame = sub_frame[:, :, ::-1]
 
@@ -148,6 +169,8 @@ class VideoCamera(object):
 		avg_color_per_row = np.average(img, axis=0)
 		avg_color = np.average(avg_color_per_row, axis=0)
 		(b, g, r) = avg_color
+		print(str(avg_color))
+		print("%s %s %s" % (whichHalf(r),whichHalf(g),whichHalf(b)))
 		return ids[whichHalf(r)][whichHalf(g)][whichHalf(b)]
 
 	#start contains the main camera loop and is called by our background thread - see main.py for how it gets called
@@ -209,7 +232,7 @@ class VideoCamera(object):
 						#we use this function call to associate the bounding box we are working on 
 						#right now with the closest activity from the previous frame
 						#if no previous activities are being tracked then a new activity is created
-						newLabel = self.identify(frame[startY:endY,startX:endX], cv2)
+						newLabel = self.identify2(frame[startY:endY,startX:endX], cv2)
 						t = self.find_closest_tracked_activity(rect_start, newLabel, all_detected_points)
 						if newLabel != None:
 							t.setLabel(newLabel)

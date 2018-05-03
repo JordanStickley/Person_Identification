@@ -16,7 +16,7 @@ class ActivityDbRow(object):
 		self.rect_end = None # the x, y of the lower right ...
 		self.detected = False # this value gets marked as true on each pass through the main camera loop until the person leaves and then becomes false
 		self.not_detected_count = 0 #an additional value used to decide when a person has left the camera
-
+		self.updateLabelCounter = 0
 		if row: # when reconsituting from the database we will have a row of column values that we use to populate this instance
 			self.id = row[0]
 			self.label = row[1]
@@ -37,7 +37,15 @@ class ActivityDbRow(object):
 		return self.label
 
 	def setLabel(self, label):
-		self.label = label;
+		if self.label == None or self.label == "Unknown":
+			self.updateLabelCounter == 0
+			self.label = label;
+		elif self.updateLabelCounter == 5:
+			self.updateLabelCounter == 0
+			if label != "Unknown":
+				self.label = label;
+		else:
+			self.updateLabelCounter += 1
 
 	def getStart_time(self):
 		return self.start_time
