@@ -108,8 +108,11 @@ class VideoCamera(object):
 					points.append(box.astype("int")[0:2])
 
 		return points
-
-	def identify2(self, sub_frame, cv2):
+		
+	# look for a face inside the rectangle bounding a person.
+	# using the location of the face, find a smaller region 
+	# rougly where the chest should be to detect shirt color
+	def identify(self, sub_frame, cv2):
 		BLUE=(255, 0, 0)
 		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
 		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
@@ -127,37 +130,36 @@ class VideoCamera(object):
 				h = int(SHIRT_SCALE_Y * h);
 				cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
 				label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
+				print(label)
 		except Exception:
 			None
 		return label
 
-	# look for a face inside the rectangle bounding a person.
-	# using the location of the face, find a smaller region 
-	# rougly where the chest should be to detect shirt color
-	def identify(self, sub_frame, cv2):
-		BLUE=(255, 0, 0)
-		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
-		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
-		SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
-		label = None
-		# Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-		rgb_frame = sub_frame[:, :, ::-1]
 
-		# Find all the faces and face enqcodings in the frame of video
-		face_locations = face_recognition.face_locations(rgb_frame)
-		face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-		# Loop through each face in this frame of video
-		for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-			x = left
-			y = top
-			w = right-left
-			h = bottom-top
-			x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
-			y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
-			w = int(SHIRT_SCALE_X * w);
-			h = int(SHIRT_SCALE_Y * h);
-			cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
-			label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
+	# def identify(self, sub_frame, cv2):
+	# 	BLUE=(255, 0, 0)
+	# 	SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
+	# 	SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
+	# 	SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
+	# 	label = None
+	# 	# Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+	# 	rgb_frame = sub_frame[:, :, ::-1]
+
+	# 	# Find all the faces and face enqcodings in the frame of video
+	# 	face_locations = face_recognition.face_locations(rgb_frame)
+	# 	face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+	# 	# Loop through each face in this frame of video
+	# 	for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+	# 		x = left
+	# 		y = top
+	# 		w = right-left
+	# 		h = bottom-top
+	# 		x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
+	# 		y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
+	# 		w = int(SHIRT_SCALE_X * w);
+	# 		h = int(SHIRT_SCALE_Y * h);
+	# 		cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
+	# 		label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
 
 		return label
 
@@ -168,15 +170,24 @@ class VideoCamera(object):
 		conn.commit()
 
 	#given a subregion ( at chest level ) we calculate the average pixel color and then
-	# use that to index down to a numeric value in the range of 1-8.
+	# use that to index down to a numeric value in the range of 1-6.
 	def getIdentitiyCode(self, img):
-		ids=[[[1, 2],[3, 4]],[[5, 6],[7, 8]]]
 		avg_color_per_row = np.average(img, axis=0)
 		avg_color = np.average(avg_color_per_row, axis=0)
 		(b, g, r) = avg_color
-		#print(str(avg_color))
-		#print("%s %s %s" % (whichHalf(r),whichHalf(g),whichHalf(b)))
-		return ids[whichHalf(r)][whichHalf(g)][whichHalf(b)]
+		print("%s %s %s" % (r, g, b))
+		if r < 128 and b < 128 and g < 128:
+			return 1
+		elif r > 200 and b > 200 and g > 200:
+			return 2
+		elif r > b and r > g:
+			return 3
+		elif b > g and b > r:
+			return 4
+		elif g > b and g > r:
+			return 5
+		else:
+			return 6
 
 	#start contains the main camera loop and is called by our background thread - see main.py for how it gets called
 	def start(self):
@@ -237,7 +248,7 @@ class VideoCamera(object):
 						#we use this function call to associate the bounding box we are working on 
 						#right now with the closest activity from the previous frame
 						#if no previous activities are being tracked then a new activity is created
-						newLabel = self.identify2(frame[startY:endY,startX:endX], cv2)
+						newLabel = self.identify(frame[startY:endY,startX:endX], cv2)
 						t = self.find_closest_tracked_activity(rect_start, newLabel, all_detected_points)
 						#only use a label if we found one
 						if newLabel != None:
