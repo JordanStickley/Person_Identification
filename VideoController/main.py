@@ -32,7 +32,7 @@ mysql.init_app(app)
 #hacky way to get my own ip address - connect to mysql and then disconnect
 def get_ip_address():
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	s.connect((config['DB']['host'], 3306))
+	s.connect(("8.8.8.8", 80))
 	ip = s.getsockname()[0]
 	s.close()
 	return ip

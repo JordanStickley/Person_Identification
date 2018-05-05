@@ -14,7 +14,7 @@ import time, os
 from threading import Lock
 from shared.CameraDbRow import CameraDbRow
 from shared.ActivityDbRow import ActivityDbRow
-# import face_recognition
+import face_recognition
 
 def whichHalf(x):
 	if x < 128:
@@ -112,60 +112,61 @@ class VideoCamera(object):
 	# look for a face inside the rectangle bounding a person.
 	# using the location of the face, find a smaller region 
 	# rougly where the chest should be to detect shirt color
-	def identify(self, sub_frame, cv2):
-		BLUE=(255, 0, 0)
-		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
-		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
-		SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
-		label = None
-		try:
-			gray = cv2.cvtColor(sub_frame, cv2.COLOR_BGR2GRAY)
-			gray = cv2.GaussianBlur(gray, (21, 21), 0)
-			face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt2.xml')
-			faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-			for (x,y,w,h) in faces:
-				x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
-				y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
-				w = int(SHIRT_SCALE_X * w);
-				h = int(SHIRT_SCALE_Y * h);
-				cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
-				label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
-				print(label)
-		except Exception:
-			None
-		return label
-
-
 	# def identify(self, sub_frame, cv2):
 	# 	BLUE=(255, 0, 0)
 	# 	SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
 	# 	SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
 	# 	SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
 	# 	label = None
-	# 	# Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-	# 	rgb_frame = sub_frame[:, :, ::-1]
+	# 	try:
+	# 		gray = cv2.cvtColor(sub_frame, cv2.COLOR_BGR2GRAY)
+	# 		gray = cv2.GaussianBlur(gray, (21, 21), 0)
+	# 		face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_alt2.xml')
+	# 		faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+	# 		for (x,y,w,h) in faces:
+	# 			x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
+	# 			y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
+	# 			w = int(SHIRT_SCALE_X * w);
+	# 			h = int(SHIRT_SCALE_Y * h);
+	# 			cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
+	# 			label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
+	# 			print(label)
+	# 	except Exception:
+	# 		None
+	# 	return label
 
-	# 	# Find all the faces and face enqcodings in the frame of video
-	# 	face_locations = face_recognition.face_locations(rgb_frame)
-	# 	face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-	# 	# Loop through each face in this frame of video
-	# 	for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-	# 		x = left
-	# 		y = top
-	# 		w = right-left
-	# 		h = bottom-top
-	# 		x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
-	# 		y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
-	# 		w = int(SHIRT_SCALE_X * w);
-	# 		h = int(SHIRT_SCALE_Y * h);
-	# 		cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
-	# 		label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
+
+	def identify(self, sub_frame, cv2):
+		BLUE=(255, 0, 0)
+		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
+		SHIRT_SCALE_X = 0.6;	# Width of shirt region compared to the detected face
+		SHIRT_SCALE_Y = 0.6;	# Height of shirt region compared to the detected face
+		label = None
+		# Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+		rgb_frame = sub_frame[:, :, ::-1]
+
+		# Find all the faces and face enqcodings in the frame of video
+		face_locations = face_recognition.face_locations(rgb_frame)
+		face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+		# Loop through each face in this frame of video
+		for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+			x = left
+			y = top
+			w = right-left
+			h = bottom-top
+			x = x + int(0.5 * (1.0-SHIRT_SCALE_X) * w);
+			y = y + int(SHIRT_DY * h) + int(0.5 * (1.0-SHIRT_SCALE_Y) * h);
+			w = int(SHIRT_SCALE_X * w);
+			h = int(SHIRT_SCALE_Y * h);
+			cv2.rectangle(sub_frame, (x, y), (x+w, y+h), BLUE, 1)
+			label = "Person %s" % self.getIdentitiyCode(sub_frame[y:(y+h),x:(x+w)])
 
 		return label
 
 	def saveActivityLabel(self, t):
 		conn = self.mysql.connect()
 		cursor = conn.cursor()
+		print("saving %s", t.getLabel())
 		cursor.execute("update tracking set label = '%s' where id = %s" % (t.getLabel(), t.getID()))
 		conn.commit()
 
