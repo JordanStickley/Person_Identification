@@ -131,6 +131,9 @@ class VideoCamera(object):
 			None
 		return label
 
+	# look for a face inside the rectangle bounding a person.
+	# using the location of the face, find a smaller region 
+	# rougly where the chest should be to detect shirt color
 	def identify(self, sub_frame, cv2):
 		BLUE=(255, 0, 0)
 		SHIRT_DY = 1.75;	# Distance from top of face to top of shirt region, based on detected face height.
@@ -164,6 +167,8 @@ class VideoCamera(object):
 		cursor.execute("update tracking set label = '%s' where id = %s" % (t.getLabel(), t.getID()))
 		conn.commit()
 
+	#given a subregion ( at chest level ) we calculate the average pixel color and then
+	# use that to index down to a numeric value in the range of 1-8.
 	def getIdentitiyCode(self, img):
 		ids=[[[1, 2],[3, 4]],[[5, 6],[7, 8]]]
 		avg_color_per_row = np.average(img, axis=0)
@@ -234,6 +239,7 @@ class VideoCamera(object):
 						#if no previous activities are being tracked then a new activity is created
 						newLabel = self.identify2(frame[startY:endY,startX:endX], cv2)
 						t = self.find_closest_tracked_activity(rect_start, newLabel, all_detected_points)
+						#only use a label if we found one
 						if newLabel != None:
 							t.setLabel(newLabel)
 							self.saveActivityLabel(t)
@@ -324,7 +330,7 @@ class VideoCamera(object):
 				conn.commit()
 		return l
 
-	#method to find a tracking activity record that corresponds with the person detected in this frame represented by rect_start
+	#method to find a tracking activity record that corresponds with the person detected in this frame represented by rect_start and newLabel
 	def find_closest_tracked_activity(self, rect_start, newLabel, all_detected_points):
 		#populate a variable with the number of detected people in frame at this time
 		detected_person_count = len(all_detected_points)
