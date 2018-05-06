@@ -31,10 +31,28 @@ mysql.init_app(app)
 
 #hacky way to get my own ip address - connect to mysql and then disconnect
 def get_ip_address():
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	s.connect(("8.8.8.8", 80))
-	ip = s.getsockname()[0]
-	s.close()
+	global config
+	testIp = config['DB']['host']
+	testPort = 3306
+	#Only connect to the db as the test Ip when it's not localhost.  If it's localhost, then use googles dns.  
+	#We don't always use googles dns because we might not have an internet connection.
+	if testIp == 'localhost' or testIp == '127.0.0.1':
+		print('using google dns')
+		testIp = '8.8.8.8'
+		testPort = 80
+
+	#initialize ip to what the ip found using this method
+	ip = socket.gethostbyname(socket.gethostname())
+	print(ip)
+	#then try a more advanced method because it's more likely to find the right ip
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		s.connect((testIp, testPort))
+		ip = s.getsockname()[0]
+		s.close()
+	except:
+		None
+
 	return ip
 
 #in order to facilitate running more than one VideoController on the same computer, 
