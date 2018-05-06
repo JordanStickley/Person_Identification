@@ -6,6 +6,7 @@ sys.path.append("..")
 from flask import Flask, request, render_template, Response
 from flaskext.mysql import MySQL
 from camera import VideoCamera
+import cv2
 import time, os, threading, socket
 from flask_cors import CORS
 import configparser
@@ -120,6 +121,18 @@ cameraDetails = updateDetailsInDb()
 if not cameraDetails:
 	print("Not able to start video controller. Make sure this controller has a unique camera ID in config.")
 	exit()
+
+def countCameras():
+	global config, mysql, camera, cameraDetails
+	count = 0
+	for i in range(0, 3):
+		try:
+			x = cv2.VideoCapture(int(i))
+			if x.get(cv2.CAP_PROP_FPS) > 0:
+				count+=1
+		except:
+			None
+	return count
 
 #a method called by flask to start the thread that manages the camera
 def checkCamera():

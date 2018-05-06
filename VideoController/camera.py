@@ -16,6 +16,10 @@ from shared.CameraDbRow import CameraDbRow
 from shared.ActivityDbRow import ActivityDbRow
 import face_recognition
 
+port=5001
+if 'PORT' in os.environ:
+	port=int(os.environ['PORT'])
+
 def whichHalf(x):
 	if x < 128:
 		return 0
