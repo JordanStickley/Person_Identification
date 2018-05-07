@@ -6,6 +6,11 @@ Install an OS specific version of python 3.6
 	- flask-cors
 	- mysql
 	- imutils
+	- scipy
+	- Numpy
+	- CMake
+	- dlib (Visual Studio 2015 or newer version is required for Windows)
+	- face_recognition
 
 Install an os specific version of mysql
 	Using the root mysql user, run the my_tables.sql script found in the root of the git project
